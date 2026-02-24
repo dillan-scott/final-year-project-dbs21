@@ -1,0 +1,71 @@
+# =========================
+# Data & Checkpoints
+# =========================
+# Ignore all data files, but keep the directory structures (if you use .gitkeep)
+data/
+# data/raw/*
+# data/processed/*
+# !data/raw/.gitkeep
+# !data/processed/.gitkeep
+
+# Common data formats used in MOA/river
+*.csv
+*.arff
+*.dat
+*.gz
+
+# Saved RBM models or weights
+*.pkl
+*.h5
+*.npy
+*.npz
+models/
+
+# =========================
+# Python & Environments
+# =========================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+env/
+rrbm_env/
+.env
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# Jupyter Notebooks
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# OS & IDE Files
+# =========================
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# VS Code / PyCharm
+.vscode/
+.idea/

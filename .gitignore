@@ -51,6 +51,8 @@ wheels/
 .installed.cfg
 *.egg
 
+.mypy_cache/
+
 # =========================
 # Jupyter Notebooks
 # =========================

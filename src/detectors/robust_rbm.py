@@ -156,3 +156,27 @@ class RobustRBM(nn.Module):
             self.c.add_(self.lr * (pos_assoc_c - neg_assoc_c))
 
         return recon_loss.item()
+
+    def reconstruction_error(self, v: torch.Tensor, z: torch.Tensor) -> float:
+        """
+        Calculates the mean reconstruction error for a mini-batch of instances.
+
+        It samples the hidden states conditionally, computes the reconstructed probabilities,
+        and calculates the average Euclidean distance between the original and reconstructed inputs.
+
+        Args:
+            v (torch.Tensor): Tensor of visible layer inputs. Shape: (batch_size, V)
+            z (torch.Tensor): Tensor of class layer inputs. Shape: (batch_size, Z)
+
+        Returns:
+            float: The mean reconstruction error for the mini-batch.
+        """
+        _, h_sample = self.sample_hidden(v, z)
+        v_prob, _ = self.sample_visible(h_sample)
+        z_prob, _ = self.sample_class(h_sample)
+
+        error = torch.sqrt(
+            torch.sum((v - v_prob) ** 2, dim=1) + torch.sum((z - z_prob) ** 2, dim=1)
+        )
+
+        return error.mean().item()

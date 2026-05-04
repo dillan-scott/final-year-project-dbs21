@@ -1,3 +1,4 @@
+import math
 from typing import Tuple
 
 import torch
@@ -100,6 +101,70 @@ class RobustRBM(nn.Module):
         prob = torch.softmax(h @ self.U + self.c, dim=-1)
         return prob, torch.multinomial(prob, 1).squeeze()
 
+    def compute_truncation_factor(self, v: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
+        """
+        Computes robust truncation factors for each visible neuron (input feature).
+
+        Uses 0-1 loss: $L_i(y_a; z) = \\mathbb{1}[|v_i - \\hat{v}_i| > 0.5]$.
+        This implementation uses a pseudo-Huber M-estimator, solved by iteratively re-weighted
+        averaging. The returned value is a multiplicative truncation coefficient in $[0, 1]$ per
+        visible feature, suitable for robust gradient descent updates.
+
+        Args:
+            v (torch.Tensor): Tensor of visible layer inputs. Shape: (batch_size, V)
+            z (torch.Tensor): Tensor of class layer inputs. Shape: (batch_size, Z)
+
+        Returns:
+            torch.Tensor: Tensor of truncation factors per visible feature. Shape: (V,)
+        """
+        batch_size = v.size(0)
+
+        if batch_size == 0:
+            return torch.ones(self.V, device=v.device, dtype=v.dtype)
+
+        with torch.no_grad():
+            h_prob, _ = self.sample_hidden(v, z)
+            v_prob, _ = self.sample_visible(h_prob)
+
+            losses = torch.abs(v - v_prob)
+
+            gamma_i = losses.mean(dim=0)
+            diff = losses - gamma_i.unsqueeze(0)
+
+            sigma_hat = diff.std(dim=0, unbiased=False).clamp_min(1e-6)
+
+            c = 0.5
+            for _ in range(10):
+                u = diff / sigma_hat.unsqueeze(0)
+
+                weights = 1.0 / (1.0 + u**2)
+                sigma_sq_new = (weights * (diff**2)).mean(dim=0) / c
+                sigma_new = torch.sqrt(sigma_sq_new).clamp_min(1e-6)
+
+                if torch.max(torch.abs(sigma_new - sigma_hat)).item() < 1e-6:
+                    sigma_hat = sigma_new
+                    break
+                sigma_hat = sigma_new
+
+            scale = sigma_hat * math.sqrt(batch_size / math.log(2.0 / self.delta))
+            scale = scale.clamp_min(1e-6)
+
+            theta_hat = losses.mean(dim=0)
+
+            for _ in range(10):
+                u = (losses - theta_hat.unsqueeze(0)) / scale.unsqueeze(0)
+                weights = 1.0 / torch.sqrt(1.0 + u**2)
+                theta_new = (weights * losses).sum(dim=0) / (weights.sum(dim=0) + 1e-8)
+                if torch.max(torch.abs(theta_new - theta_hat)).item() < 1e-6:
+                    theta_hat = theta_new
+                    break
+                theta_hat = theta_new
+
+            empirical_loss = losses.mean(dim=0).clamp_min(1e-8)
+            truncation = (theta_hat / empirical_loss).clamp(min=0.0, max=1.0)
+
+        return truncation
+
     def cd_k_step(self, v: torch.Tensor, z: torch.Tensor) -> float:
         """
         Performs one step of Contrastive Divergence (CD-k) to update model parameters.
@@ -145,15 +210,25 @@ class RobustRBM(nn.Module):
         neg_assoc_b = torch.mean(h_prob_neg, dim=0)
         neg_assoc_c = torch.mean(z_k, dim=0)
 
+        truncation_factor = self.compute_truncation_factor(v, z)
+        global_truncation = torch.mean(truncation_factor)
+
+        grad_W = (pos_assoc_W * truncation_factor.unsqueeze(1)) - neg_assoc_W
+        grad_a = (pos_assoc_a * truncation_factor) - neg_assoc_a
+
+        grad_U = (pos_assoc_U * global_truncation) - neg_assoc_U
+        grad_b = (pos_assoc_b * global_truncation) - neg_assoc_b
+        grad_c = (pos_assoc_c * global_truncation) - neg_assoc_c
+
         recon_loss = torch.mean((v - v_k) ** 2) + torch.mean((z - z_k) ** 2)
 
         # Parameter updates
         with torch.no_grad():
-            self.W.add_(self.lr * (pos_assoc_W - neg_assoc_W))
-            self.U.add_(self.lr * (pos_assoc_U - neg_assoc_U))
-            self.a.add_(self.lr * (pos_assoc_a - neg_assoc_a))
-            self.b.add_(self.lr * (pos_assoc_b - neg_assoc_b))
-            self.c.add_(self.lr * (pos_assoc_c - neg_assoc_c))
+            self.W.add_(self.lr * grad_W)
+            self.U.add_(self.lr * grad_U)
+            self.a.add_(self.lr * grad_a)
+            self.b.add_(self.lr * grad_b)
+            self.c.add_(self.lr * grad_c)
 
         return recon_loss.item()
 

@@ -18,6 +18,7 @@ class RobustRBM(nn.Module):
         k: int = 1,
         learning_rate: float = 0.005,
         delta: float = 0.05,
+        ema_decay: float = 0.99,
         random_state: int = 42,
     ) -> None:
         """
@@ -35,6 +36,7 @@ class RobustRBM(nn.Module):
         self.k = k
         self.lr = learning_rate
         self.delta = delta
+        self.ema_decay = ema_decay
 
         torch.manual_seed(random_state)
 
@@ -49,6 +51,9 @@ class RobustRBM(nn.Module):
         self.b = nn.Parameter(torch.zeros(self.H))
         # Bias for class layer z
         self.c = nn.Parameter(torch.zeros(self.Z))
+
+        self.register_buffer("noise_mean", torch.zeros(self.V))
+        self.register_buffer("noise_var", torch.ones(self.V))
 
     def sample_hidden(self, v: torch.Tensor, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -88,7 +93,6 @@ class RobustRBM(nn.Module):
         """
         Calculates the probability of predicting each class and samples class assignments.
         Computes P(z = 1_k | h) using Eq. 12 from the paper.
-        Note: sign of softmax input is flipped.
 
         Args:
             h (torch.Tensor): Tensor of hidden layer states. Shape: (batch_size, H)
@@ -98,14 +102,16 @@ class RobustRBM(nn.Module):
                 - prob: Tensor of class probabilities. Shape: (batch_size, Z)
                 - sample: Tensor of sampled class indices. Shape: (batch_size,)
         """
-        prob = torch.softmax(h @ self.U + self.c, dim=-1)
+        logits = -(h @ self.U + self.c)
+        prob = torch.softmax(logits, dim=-1)
         return prob, torch.multinomial(prob, 1).squeeze()
 
     def compute_truncation_factor(self, v: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
         """
         Computes robust truncation factors for each visible neuron (input feature).
 
-        Uses 0-1 loss: $L_i(y_a; z) = \\mathbb{1}[|v_i - \\hat{v}_i| > 0.5]$.
+        Uses 0-1 loss based on the predicted class vs. true class to estimate the per-feature loss
+        distribution.
         This implementation uses a pseudo-Huber M-estimator, solved by iteratively re-weighted
         averaging. The returned value is a multiplicative truncation coefficient in $[0, 1]$ per
         visible feature, suitable for robust gradient descent updates.
@@ -124,9 +130,14 @@ class RobustRBM(nn.Module):
 
         with torch.no_grad():
             h_prob, _ = self.sample_hidden(v, z)
-            v_prob, _ = self.sample_visible(h_prob)
+            z_prob, _ = self.sample_class(h_prob)
 
-            losses = torch.abs(v - v_prob)
+            z_pred = torch.argmax(z_prob, dim=1)
+            z_true = torch.argmax(z, dim=1)
+
+            instance_loss = (z_pred != z_true).float()
+            v_norm = v / (v.abs().max(dim=0, keepdim=True)[0] + 1e-8)
+            losses = instance_loss.unsqueeze(1) * v_norm
 
             gamma_i = losses.mean(dim=0)
             diff = losses - gamma_i.unsqueeze(0)
@@ -160,10 +171,35 @@ class RobustRBM(nn.Module):
                     break
                 theta_hat = theta_new
 
-            empirical_loss = losses.mean(dim=0).clamp_min(1e-8)
-            truncation = (theta_hat / empirical_loss).clamp(min=0.0, max=1.0)
+        return theta_hat.clamp(0.0, 1.0)
 
-        return truncation
+    def compute_energy_gating(self, v: torch.Tensor) -> torch.Tensor:
+        """
+        Computes the binary gating mask 'g' based on the Gaussian noise model.
+        Updates the running mean and variance of the clean distribution.
+
+        Args:
+            v (torch.Tensor): Visible layer inputs. Shape: (batch_size, V)
+
+        Returns:
+            torch.Tensor: Binary gating mask g. Shape: (batch_size, V)
+        """
+        if self.training:
+            batch_mean = v.mean(dim=0)
+            batch_var = v.var(dim=0, unbiased=False)
+
+            self.noise_mean: torch.Tensor = (
+                self.ema_decay * self.noise_mean + (1.0 - self.ema_decay) * batch_mean
+            )
+            self.noise_var: torch.Tensor = (
+                self.ema_decay * self.noise_var + (1.0 - self.ema_decay) * batch_var
+            )
+
+        std = torch.sqrt(self.noise_var).clamp_min(1e-6)
+
+        g = (torch.abs(v - self.noise_mean.unsqueeze(0)) <= 3.0 * std.unsqueeze(0)).float()
+
+        return g
 
     def cd_k_step(self, v: torch.Tensor, z: torch.Tensor) -> float:
         """
@@ -183,20 +219,28 @@ class RobustRBM(nn.Module):
         """
         batch_size = v.size(0)
 
-        # Positive phase: Sample hidden states given the data
-        h_prob, _ = self.sample_hidden(v, z)
+        g = self.compute_energy_gating(v)
+        v_gated = v * g
+        v_k = v_gated.clone()
 
-        pos_assoc_W = v.T @ h_prob / batch_size
+        # Positive phase: Sample hidden states given the data
+        h_prob, _ = self.sample_hidden(v_gated, z)
+
+        pos_assoc_W = v_gated.T @ h_prob / batch_size
         pos_assoc_U = h_prob.T @ z / batch_size
-        pos_assoc_a = torch.mean(v, dim=0)
+        pos_assoc_a = torch.mean(v_gated, dim=0)
         pos_assoc_b = torch.mean(h_prob, dim=0)
         pos_assoc_c = torch.mean(z, dim=0)
 
         # Gibbs sampling for k steps
-        v_k, z_k = v, z
+        z_k = z
         for _ in range(self.k):
             _, h_k = self.sample_hidden(v_k, z_k)
             _, v_k = self.sample_visible(h_k)
+
+            g_k = self.compute_energy_gating(v_k)
+            v_k = v_k * g_k
+
             _, z_k = self.sample_class(h_k)
             # pylint: disable=not-callable
             z_k = nn.functional.one_hot(z_k, num_classes=self.Z).float()
@@ -210,17 +254,17 @@ class RobustRBM(nn.Module):
         neg_assoc_b = torch.mean(h_prob_neg, dim=0)
         neg_assoc_c = torch.mean(z_k, dim=0)
 
-        truncation_factor = self.compute_truncation_factor(v, z)
-        global_truncation = torch.mean(truncation_factor)
+        theta_hat = self.compute_truncation_factor(v, z)
 
-        grad_W = (pos_assoc_W * truncation_factor.unsqueeze(1)) - neg_assoc_W
-        grad_a = (pos_assoc_a * truncation_factor) - neg_assoc_a
+        grad_W = (pos_assoc_W * theta_hat.unsqueeze(1)) - neg_assoc_W
+        grad_a = (pos_assoc_a * theta_hat) - neg_assoc_a
+        grad_U = (pos_assoc_U * theta_hat.mean()) - neg_assoc_U
+        grad_b = (pos_assoc_b * theta_hat.mean()) - neg_assoc_b
+        grad_c = (pos_assoc_c * theta_hat.mean()) - neg_assoc_c
 
-        grad_U = (pos_assoc_U * global_truncation) - neg_assoc_U
-        grad_b = (pos_assoc_b * global_truncation) - neg_assoc_b
-        grad_c = (pos_assoc_c * global_truncation) - neg_assoc_c
-
-        recon_loss = torch.mean((v - v_k) ** 2) + torch.mean((z - z_k) ** 2)
+        recon_loss = torch.sqrt(
+            torch.sum((v - v_k) ** 2, dim=1) + torch.sum((z - z_k) ** 2, dim=1)
+        ).mean()
 
         # Parameter updates
         with torch.no_grad():

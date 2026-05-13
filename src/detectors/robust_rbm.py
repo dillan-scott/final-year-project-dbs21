@@ -106,6 +106,27 @@ class RobustRBM(nn.Module):
         prob = torch.softmax(logits, dim=-1)
         return prob, torch.multinomial(prob, 1).squeeze()
 
+    def forward(self, v: torch.Tensor, z: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Performs a forward pass through the RRBM, returning the sampled hidden states,
+        reconstructed visible probabilities, and reconstructed class probabilities.
+
+        Args:
+            v (torch.Tensor): Tensor of visible layer inputs. Shape: (batch_size, V)
+            z (torch.Tensor): Tensor of class layer inputs. Shape: (batch_size, Z)
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: A tuple containing:
+                - h_sample: Sampled hidden states. Shape: (batch_size, H)
+                - v_recon_prob: Reconstructed visible probabilities. Shape: (batch_size, V)
+                - z_recon_prob: Reconstructed class probabilities. Shape: (batch_size, Z)
+        """
+        h_prob, h_sample = self.sample_hidden(v, z)
+        v_recon_prob, _ = self.sample_visible(h_sample)
+        z_recon_prob, _ = self.sample_class(h_sample)
+
+        return h_sample, v_recon_prob, z_recon_prob
+
     def compute_truncation_factor(self, v: torch.Tensor, z: torch.Tensor) -> torch.Tensor:
         """
         Computes robust truncation factors for each visible neuron (input feature).
@@ -188,10 +209,10 @@ class RobustRBM(nn.Module):
             batch_mean = v.mean(dim=0)
             batch_var = v.var(dim=0, unbiased=False)
 
-            self.noise_mean: torch.Tensor = (
+            self.noise_mean: torch.Tensor = ( # pytlint: disable=attribute-defined-outside-init
                 self.ema_decay * self.noise_mean + (1.0 - self.ema_decay) * batch_mean
             )
-            self.noise_var: torch.Tensor = (
+            self.noise_var: torch.Tensor = ( # pylint: disable=attribute-defined-outside-init
                 self.ema_decay * self.noise_var + (1.0 - self.ema_decay) * batch_var
             )
 

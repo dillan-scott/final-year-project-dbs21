@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from src.detectors.trend_tracker import TrendTracker
+from src.detectors.RRBM_DD.trend_tracker import TrendTracker
 
 
 def test_trend_tracker_insufficient_data():

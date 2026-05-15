@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.detectors.robust_rbm import RobustRBM
+from src.detectors.RRBM_DD.robust_rbm import RobustRBM
 
 
 def test_energy_gating_selectivity():

@@ -52,6 +52,7 @@ wheels/
 *.egg
 
 .mypy_cache/
+.pytest_cache/
 
 # =========================
 # Jupyter Notebooks
@@ -71,3 +72,8 @@ Desktop.ini
 # VS Code / PyCharm
 .vscode/
 .idea/
+.claude/
+
+*.pdf
+
+report/

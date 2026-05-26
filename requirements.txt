@@ -1,1 +1,8 @@
+numpy
+pandas
 torch
+scikit-learn
+river
+jupyterlab
+ipykernel
+matplotlib

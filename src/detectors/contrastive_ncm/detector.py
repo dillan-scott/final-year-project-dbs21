@@ -53,6 +53,8 @@ class ContrastiveNCMDetector:
         epochs: int = 300,
         lr: float = 0.0001,
         num_classes: int | None = None,
+        tqdm_position: int = 0,
+        desc_prefix: str = "",
     ) -> None:
         """Train the autoencoder, then fit NCM prototypes on the resulting embeddings."""
         train_contrastive_autoencoder(
@@ -62,6 +64,8 @@ class ContrastiveNCMDetector:
             lr=lr,
             temperature=self.temperature,
             num_classes=num_classes,
+            tqdm_position=tqdm_position,
+            desc_prefix=desc_prefix,
         )
 
         all_h, all_labels = [], []

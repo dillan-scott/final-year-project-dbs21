@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from tqdm.auto import tqdm
 
 
 class DriftAutoencoder(nn.Module):
@@ -58,12 +59,10 @@ class PrototypeContrastiveLoss(nn.Module):
     def forward(self, h: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         num_classes = self.num_classes if self.num_classes is not None else int(labels.max().item()) + 1
 
-        # Compute per-class prototype means from the current batch (v_k in the paper)
-        prototypes = torch.zeros(num_classes, h.shape[1], device=h.device)
-        for c in range(num_classes):
-            mask = labels == c
-            if mask.any():
-                prototypes[c] = h[mask].mean(dim=0)
+        one_hot = torch.zeros(h.shape[0], num_classes, device=h.device)
+        one_hot.scatter_(1, labels.unsqueeze(1), 1.0)
+        counts = one_hot.sum(0).clamp(min=1).unsqueeze(1)
+        prototypes = (one_hot.T @ h) / counts
 
         h_norm = F.normalize(h, p=2, dim=1)
         proto_norm = F.normalize(prototypes, p=2, dim=1)
@@ -82,17 +81,21 @@ def train_contrastive_autoencoder(
     lr: float = 0.0001,
     temperature: float = 0.1,
     num_classes: int | None = None,
+    tqdm_position: int = 0,
+    desc_prefix: str = "",
 ) -> float:
 
     device = next(model.parameters()).device
+    model = torch.compile(model)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     mse_loss_fn = nn.MSELoss()
     contrastive_loss_fn = PrototypeContrastiveLoss(temperature=temperature, num_classes=num_classes)
 
     model.train()
     total_loss = 0.0
-    for epoch in range(epochs):
-        epoch_loss = 0.0
+    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Contrastive", position=tqdm_position, leave=True)
+    for _ in pbar:
+        epoch_loss = torch.tensor(0.0, device=device)
 
         for x, labels in data_loader:
             x, labels = x.to(device), labels.to(device)
@@ -108,19 +111,13 @@ def train_contrastive_autoencoder(
             loss.backward()
             optimizer.step()
 
-            epoch_loss += loss.item()
+            epoch_loss += loss.detach()
 
-            print(f"Batch Loss: {loss.item():.4f}\r", end="")
+        epoch_loss_val = epoch_loss.item() / len(data_loader)
+        total_loss += epoch_loss_val
+        pbar.set_postfix(loss=f"{epoch_loss_val:.4f}")
 
-        total_loss += epoch_loss / len(data_loader)
-
-        if (epoch + 1) % 1 == 0:
-            print(f"Epoch {epoch+1}/{epochs} | Loss: {epoch_loss / len(data_loader):.4f}")
-
-    avg_loss = total_loss / epochs
-    print(f"Average Loss over {epochs} epochs: {avg_loss:.4f}")
-
-    return avg_loss
+    return total_loss / epochs
 
 
 def train_plain_autoencoder(
@@ -128,16 +125,20 @@ def train_plain_autoencoder(
     data_loader: torch.utils.data.DataLoader,
     epochs: int = 300,
     lr: float = 0.0001,
+    tqdm_position: int = 1,
+    desc_prefix: str = "",
 ) -> float:
     """Train the autoencoder with MSE reconstruction loss only (no contrastive term)."""
     device = next(model.parameters()).device
+    model = torch.compile(model)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     mse_loss_fn = nn.MSELoss()
 
     model.train()
     total_loss = 0.0
-    for epoch in range(epochs):
-        epoch_loss = 0.0
+    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Plain AE", position=tqdm_position, leave=True)
+    for _ in pbar:
+        epoch_loss = torch.tensor(0.0, device=device)
 
         for x, _ in data_loader:
             x = x.to(device)
@@ -150,16 +151,10 @@ def train_plain_autoencoder(
             loss.backward()
             optimizer.step()
 
-            epoch_loss += loss.item()
+            epoch_loss += loss.detach()
 
-            print(f"Batch Loss: {loss.item():.4f}\r", end="")
+        epoch_loss_val = epoch_loss.item() / len(data_loader)
+        total_loss += epoch_loss_val
+        pbar.set_postfix(loss=f"{epoch_loss_val:.4f}")
 
-        total_loss += epoch_loss / len(data_loader)
-
-        if (epoch + 1) % 1 == 0:
-            print(f"Epoch {epoch+1}/{epochs} | Loss: {epoch_loss / len(data_loader):.4f}")
-
-    avg_loss = total_loss / epochs
-    print(f"Average Loss over {epochs} epochs: {avg_loss:.4f}")
-    
-    return avg_loss
+    return total_loss / epochs

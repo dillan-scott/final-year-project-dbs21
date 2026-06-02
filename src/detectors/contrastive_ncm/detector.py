@@ -106,39 +106,49 @@ class ContrastiveNCMDetector:
 
         return predictions.cpu(), is_drifted.cpu(), min_distances.cpu()
 
-    def update_with_drift(self, z_drift: torch.Tensor) -> bool:
+    def update_with_batch_drifted(
+        self, z_batch: torch.Tensor, allow_fire: bool = True,
+    ) -> bool:
         """
-        Feed a drifted embedding into the recursive concept-discovery buffer (Eq. 6).
-
-        Accumulates δ^{t-1→t} = z^t_drift − z^{t-1}_drift for each arriving drifted
-        sample. The running total Δ_drift grows until its L2 norm exceeds concept_threshold
-        T, at which point the mean of all buffered embeddings becomes a new class prototype
-        and the buffer is reset.
-
+        Batch-level concept-discovery matching the paper's time-window semantics
+        (Eq. 6, Kuppa & Le-Khac 2022).
+        
         Args:
-            z_drift: Latent embedding of a drifted sample, shape (latent_dim,).
+            z_batch: (M, latent_dim) tensor of all drifted embeddings in one batch.
+            allow_fire: if False, the accumulator is still updated but the firing
+                trigger is suppressed (used by the coupled-system wrapper to gate
+                concept-discovery on buffer composition — see streaming.py).
 
         Returns:
             True if a new class prototype was registered, False otherwise.
         """
-        z = z_drift.detach()
-        self._drift_buffer.append(z)
+        if z_batch.shape[0] == 0:
+            return False
+
+        z_batch = z_batch.detach()
+
+        # Store individual embeddings for accurate prototype computation
+        for z in z_batch:
+            self._drift_buffer.append(z)
+
+        # One representative per batch — the batch mean
+        batch_mean = z_batch.mean(dim=0)
 
         if self._prev_drift_z is not None:
-            delta = z - self._prev_drift_z
+            delta = batch_mean - self._prev_drift_z
             if self._delta_accumulated is None:
                 self._delta_accumulated = delta.clone()
             else:
                 self._delta_accumulated = self._delta_accumulated + delta
 
-            if torch.norm(self._delta_accumulated) > self.concept_threshold:
+            if allow_fire and torch.norm(self._delta_accumulated) > self.concept_threshold:
                 new_prototype = torch.stack(self._drift_buffer).mean(dim=0)
                 self.ncm.add_prototype(new_prototype)
                 self.num_classes += 1
                 self._reset_drift_buffer()
                 return True
 
-        self._prev_drift_z = z
+        self._prev_drift_z = batch_mean
         return False
 
     def encode(self, x: torch.Tensor) -> torch.Tensor:

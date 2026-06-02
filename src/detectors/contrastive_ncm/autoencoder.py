@@ -83,6 +83,7 @@ def train_contrastive_autoencoder(
     num_classes: int | None = None,
     tqdm_position: int = 0,
     desc_prefix: str = "",
+    disable_tqdm: bool = False,
 ) -> float:
 
     device = next(model.parameters()).device
@@ -93,7 +94,8 @@ def train_contrastive_autoencoder(
 
     model.train()
     total_loss = 0.0
-    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Contrastive", position=tqdm_position, leave=True)
+    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Contrastive", position=tqdm_position,
+                leave=True, disable=disable_tqdm)
     for _ in pbar:
         epoch_loss = torch.tensor(0.0, device=device)
 
@@ -127,6 +129,7 @@ def train_plain_autoencoder(
     lr: float = 0.0001,
     tqdm_position: int = 1,
     desc_prefix: str = "",
+    disable_tqdm: bool = False,
 ) -> float:
     """Train the autoencoder with MSE reconstruction loss only (no contrastive term)."""
     device = next(model.parameters()).device
@@ -136,7 +139,8 @@ def train_plain_autoencoder(
 
     model.train()
     total_loss = 0.0
-    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Plain AE", position=tqdm_position, leave=True)
+    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Plain AE", position=tqdm_position,
+                leave=True, disable=disable_tqdm)
     for _ in pbar:
         epoch_loss = torch.tensor(0.0, device=device)
 

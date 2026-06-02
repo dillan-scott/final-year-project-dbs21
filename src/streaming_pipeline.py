@@ -89,17 +89,16 @@ class ContrastiveNCMAdapter:
         """
         Feeds drifted embeddings into the recursive concept-discovery buffer
         (Eq. 6, Section 4.2).  Per the paper's Fig. 4 flow, the encoder is
-        only retrained when update_with_drift() returns True — i.e. when the
-        accumulated delta norm crosses threshold T and a new prototype is
-        created.  Drift alone does not trigger a retrain.
+        only retrained when update_with_batch_drifted() returns True — i.e.
+        when the accumulated delta norm crosses threshold T and a new
+        prototype is created.  Drift alone does not trigger a retrain.
         """
         if self._pending_drift_embeddings is None:
             return
 
-        new_concept_found = False
-        for z in self._pending_drift_embeddings:
-            if self._detector.update_with_drift(z):
-                new_concept_found = True
+        new_concept_found = self._detector.update_with_batch_drifted(
+            self._pending_drift_embeddings,
+        )
 
         self._pending_drift_embeddings = None
 

@@ -1,0 +1,66 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+\section{Context and Motivations}
+It is becoming increasingly necessary for machine learning systems to operate in dynamic environments where data arrives as a stream with no guarantees about its underlying distribution. Examples include fraud detection, network intrusion detection, and content moderation, where new observations are generated sequentially, and historical data may eventually become outdated.
+
+Learning under these conditions is referred to as adaptive or continual learning. In contrast to traditional batch learning, where models are static post-deployment, adaptive models are repeatedly updated. The motivation for these online updates is not only to handle the volume or velocity of streaming data, but also to account for concept drift - changes in the joint distribution of inputs and outputs over time. The performance of a static model, which is accurate on current data, may degrade as the environment changes. Consequently, mechanisms known as drift detectors are used to monitor incoming data streams and signal the need for model updates when necessary.
+
+While drift detection has been extensively studied in non-adversarial settings~\cite{Gao_2007, Gama_2014, Barros_2018}, critical security concerns arise when operating in environments where strategic or malicious actors may influence data streams. In domains such as fraud detection and cybersecurity, adversaries may deliberately manipulate data to evade detection, degrade model performance, or force harmful model adaptations. Unlike poisoning attacks against fixed models, adversarial attacks against adaptive systems can aim to exploit the update mechanism - using it as a vector to inject malicious concepts, suppress valid adaptations, or corrupt the detector's learned representation.
+
+In response to this threat, recent research has proposed adversarially robust drift detectors. The contrastive autoencoder and Nearest Class Mean (NCM) detector of Kuppa and Le-Khac~\cite{Kuppa_2022}, the target system of this work, uses a contrastive loss to map inputs into a latent space where same-class samples cluster tightly, classifies incoming samples by their distance to learned class prototypes using a combined Euclidean and Riemannian metric designed to reject adversarial subspaces, and grows the prototype set automatically when the accumulated displacement of drifted embeddings crosses a threshold. Another approach by Korycki and Krawczyk~\cite{Korycki_2022} pursues similar goals through reconstruction-error monitoring with an energy-based model, specifically a Robust Restricted Boltzmann Machine. Both have demonstrated robustness against certain poisoning strategies.
+
+However, both works share a fundamental limitation when viewed from the perspective of a fully coupled adaptive learning pipeline. Kuppa and Le-Khac~\cite{Kuppa_2022} evaluate their detector in isolation: their experiments measure the detector's ability to correctly classify incoming samples as drifted or not, reporting precision, recall and F1 against held-out drifted classes. No downstream base learner is used, meaning their robustness claims speak only to the detector's own classification performance and say nothing about whether those properties extend to protecting a separate model that depends on the detector to govern its adaptation. Korycki and Krawczyk~\cite{Korycki_2022} do include a base learner, but they choose a model that updates continuously, instance by instance, regardless of drift signals; meaning the detector is advisory rather than controlling.
+
+This discrepancy is significant... Understanding these limitations...\todo[color=red]{Finish this paragraph}
+
+\section{Scope}
+\label{sec:scope}
+This thesis examines adversarial attacks against an adaptive learning pipeline consisting of a static MLP classifier coupled with the contrastive auto-encoder and Nearest Class Mean detector~\cite{Kuppa_2022}. The work is centred on understanding whether this state-of-the-art robust detector is sufficient to protect a trigger-dependent base learner when the two components are deployed together as a coupled system.
+
+This work takes an adversarial perspective, proposing attacks against the coupled system, covering those on each element both individually and simultaneously. A representative subset of these attacks is then implemented and evaluated, selected to span the primary ways in which an adversary could exploit the system's coupling.
+
+% Rather than introducing a new drift detection algorithm, this thesis adopts an adversarial perspective. It proposes a novel feedback-guided attack strategy that operates under a closed-loop threat model, in which the attacker adapts their behaviour based on downstream observable feedback. This attack is used as a systematic stress test for existing adversarially robust drift detectors, allowing the evaluation of their effectiveness under stronger and more realistic assumptions about the attacker's behaviour.
+
+The aim is not to refute the robustness claims of Kuppa and Le-Khac~\cite{Kuppa_2022} but to test whether those claims extend to the protection of a downstream base learner in a realistic adaptive learning architecture. By doing so, the thesis seeks to clarify the practical security guarantees offered by the detector and identify the conditions under which the coupled system remains vulnerable.
+
+\section{Objectives}
+The primary objective of this research is to determine whether the robustness of the contrastive auto-encoder and NCM detector is sufficient to protect a static, trigger-dependent base learner from corruption when the two components are deployed as a coupled adaptive learning system.
+
+First, it formalises a taxonomy of attacks against the coupled system and identifies the structural properties of trigger-dependent architectures that create attack surfaces absent from prior evaluations. Second, it implements and experimentally analyses whether each attack can successfully harm the base learner's predictive capabilities.\todo[color=red]{More here?}
+
+% The primary objective of this research is to critically evaluate the resilience of concept drift detection mechanisms against adaptive adversaries. First, this thesis will formalise a taxonomy of threat models, explicitly distinguishing between open-loop and closed-loop, to define how attackers exploit system outputs. Building on this framework, the thesis aims to propose a novel feedback-guided attack strategy designed to induce semantic drift while avoiding detection thresholds.
+
+% Subsequently, this work will experimentally analyse the vulnerability of existing adversarially robust drift detectors to determine if they can be evaded by such adaptive strategies. Finally, the thesis seeks to characterise the boundaries of effective detection, identifying the fundamental trade-offs between sensitivity to natural drift and robustness against adversarial manipulation.
+
+
+\section{Research Questions}
+\label{sec:research questions}
+To meet the objective described in the previous section, this thesis addresses the following questions:
+\begin{enumerate}
+    \item How can the capabilities and knowledge of an adversary targeting a coupled adaptive learning system be formally defined, and what attack surfaces are introduced by trigger-dependent base learner architectures that are absent when the base learner updates continuously?
+
+    \item Can an adversary successfully corrupt the predictive accuracy of a static base learner by exploiting the retraining mechanism of a system equipped with the contrastive auto-encoder and NCM detector, despite its robustness properties?
+    
+    \item Can an adversary corrupt the detector's learned representation sufficiently to manipulate the adaptation of the base learner — either by forcing false retraining events or by suppressing valid ones?
+
+    \item What ongoing poisoning budget, in instance count and perturbation magnitude, is required to maintain these adversarial effects against a detector that continuously updates its representation of the data distribution?
+
+    \item What is the trade-off between the detector's robustness to adversarial poisoning and its sensitivity to genuine concept drift, and how does this manifest in a trigger-dependent coupled architecture?
+\end{enumerate}
+
+\section{Thesis Structure}
+The remainder of this thesis is organised as follows: 
+\begin{itemize}
+    \item \cref{ch:background} reviews the background literature on continual learning and adversarial attacks. 
+    
+    \item \cref{ch:target_system_threat_model} formalises the target system and establishes the threat model, defining the adversary's objectives, knowledge, and capabilities.
+    
+    \item \cref{ch:attack_taxonomy_objectives} presents a taxonomy of attacks against the coupled system and introduces the idea of maintenance cost. 
+    
+    % \item \cref{ch:project} lays out what needs to be done to complete the project and an expected timetable.
+    
+    % \item \cref{ch:evaluation} explains what the evaluation process will be and what is necessary to constitute success.
+    
+    % \item \cref{ch:ethics} provides a discussion of wider ethical, legal, professional and societal issues surrounding this project and the accompanying research.
+\end{itemize}

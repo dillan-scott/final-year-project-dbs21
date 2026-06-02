@@ -1,0 +1,69 @@
+\chapter{Attack Taxonomy and Objectives}
+\label{ch:attack_taxonomy_objectives}
+
+This chapter systematically explores the attack vectors that can be deployed against the target continual learning pipeline. Because the architecture couples a base learner ($M$) with a trainable drift detector ($DD$), its security must be evaluated across multiple dimensions. We introduce a $3 \times 3$ attack matrix, categorising threats along two axes: attacks on the base learner and attacks on the drift detector.\todo[color=green]{Maybe mention something about the maintenance of attacks}
+
+\section{Axis 1: Attacks on the Base Learner ($M$)}
+Attacks on the base learner (the Decision Tree) aim to degrade its predictive performance, either during inference or by exploiting retraining.
+\begin{itemize}
+    \item \textit{Evade $M$}: The adversary crafts perturbations to input features to force a misclassification, bypassing the current decision boundary without altering the model itself. Occurs strictly during the inference phase.
+
+    \item \textit{Poison $M$}: Exploits system adaptation by ensuring corrupted data is included in the retraining buffer when a drift is signalled, forcing $M$ to learn a false concept and degrading its accuracy.
+
+    \item \textit{Backdoor $M$}: A targeted form of poisoning where the adversary injects a feature "trigger" paired with a target label into the retraining buffer. After the update, $M$ behaves normally on clean data but behaves as the attacker specified for inputs containing the hidden trigger.
+\end{itemize}
+
+
+\section{Axis 2: Attacks on the Drift Detector ($DD$)}
+Attacks on the RRBM-DD aim to hijack the system's supervisory mechanism, dictating when and if the system adapts.
+\begin{itemize}
+    \item \textit{Evade $DD$}: Causes misclassification without needing to alter the weights of $DD$. This manifests as either a False Negative (masking real drift) or a False Positive (triggering unnecessary retraining).
+
+    As a stand-alone attack, a stream of False Negatives can be used to stop $M$ from learning, and a stream of False Positives can be used as a form of Denial of Service by causing repeated retraining.
+
+    \item \textit{Poison $DD$}: Exploits the fact that RRBM-DD's trains itself continually. The adversary injects adversarial concepts that bypass the network's robust gradient and noise filters, corrupting its understanding of the distribution. 
+
+    This can be used alone to increase or decrease the detector's tolerance to changes, causing blindness or hypersensitivity to real drift, respectively.
+
+    \item \textit{Backdoor $DD$}: Plants a hidden trigger within the RRBM-DD's latent representation by exploiting its online updating mechanism. This establishes a targeted vulnerability without corrupting the detector's baseline performance.
+    
+    This alone can grant an attacker precise, on-demand control over the system, allowing them to dictate exactly when a drift is detected and when a retraining cycle is initiated or suppressed.
+\end{itemize}
+
+\section{The Maintenance Principle}
+\label{sec:maintenance principle}
+Because the target architecture relies on a trigger-based adaptation mechanism, any malicious payload injected into the system is inherently temporary. Continual learning systems naturally evolve; therefore, even if an attacker successfully poisons the base learner ($M$), subsequent natural concept drift will trigger a new retraining cycle and overwrite the compromised model.
+
+Therefore, any poisoning or backdoor placed in either $DD$ or $M$ must be actively maintained. When attacking $DD$, the adversary must continuously inject the adversarial distribution into the stream to prevent the neural network from healing and relearning the true data distribution. When attacking $M$, the adversary must protect the compromised model by suppressing future drift signals to prevent $M$ from retraining. This suppression can be achieved by actively evading $DD$ (forcing false negatives), poisoning $DD$ to raise its tolerance, or utilising a backdoor in $DD$ to dictate its signalling behaviour.
+
+\subsection{Meaningful Single-Component Attacks}
+...\todo[color=green]{Write a subsection here (include attacks that require no DD manipulation - ride real drift signal)}
+
+\section{Compound Attacks: The Matrix of Combinations}
+By combining the three strategies for $M$ (Evade, Poison, Backdoor) with the three strategies for $DD$, we yield nine potential compound attacks. The following subsections categorise these combinations based on their practical viability and threat level.
+
+\subsection{The Primary Threats}
+These combinations are both viable and present a threat.\todo[color=green]{Break into more subcategories}
+\begin{itemize}
+    \item \textit{Evade $DD$ + Poison $M$}: The attacker injects data that causes $DD$ to falsely signal a drift. $M$ is subsequently retrained on a batch of poisoned instances injected concurrently by the attacker. The attacker must then maintain this poisoned state using the methods discussed in~\cref{sec:maintenance principle}.
+
+    \item \textit{Evade $DD$ + Backdoor $M$}: Mechanically similar to the attack above, but rather than degrading general accuracy, the attacker implants a specific feature trigger into $M$ during the forced retraining cycle.
+
+    \item \textit{Poison $M$ + Poison $DD$}: During a retraining cycle (triggered either by an evasion of $DD$ or a genuine drift signal), the attacker uses poisoned instances to corrupt $M$. Concurrently, these instances must circumvent $DD$'s robustness measures, manipulating its internal representation so it accepts the adversarial distribution as normal. The state of $DD$ must then be maintained using the methods laid out in~\cref{sec:maintenance principle}.
+
+    \item \textit{Backdoor $M$ + Poison $DD$}: Following the same methodology as the attack above, the attacker poisons $DD$ (and maintains it) to secure the system's state. But they implant a specific latent trigger in $M$ during retraining rather than just degrading its general accuracy.
+
+    \item \textit{Poison $DD$ + Evade $M$}: To execute a high volume of evasion attacks against $M$, the attacker must prevent these adversarial inputs from triggering a drift signal. The attacker first poisons $DD$, raising its tolerance to change. With the detector effectively blinded, the attacker can feed crafted, highly perturbed evasion inputs to $M$ without fear of triggering a defensive retraining cycle.
+    
+    \item \textit{Backdoor $DD$ + Poison $M$}: The attacker first establishes a latent trigger in $DD$. When the attacker is ready to poison $M$, they activate the $DD$ backdoor to fire a drift signal exactly when their poisoned payload enters the window, effectively guaranteeing $M$ retrains on the malicious data.
+\end{itemize}
+
+\subsection{Pointless or Impractical Combinations}
+These combinations represent conflicting operational objectives or technical infeasibility.
+\begin{itemize}
+    \item \textit{Evade $M$ + Evade $DD$}: If the attacker's goal is to cause a misclassification on $M$ during inference, evading $DD$ adds no value. (The exception is where a mass evasion campaign on $M$ is the goal).
+
+    \item \textit{Backdoor $DD$ + Evade $M$}: Establishing a backdoor in a complex generative model like the RRBM-DD requires a considerable amount of effort. Using that backdoor merely to facilitate instance-level evasion on $M$ (a binary Decision Tree) is a waste of resources. 
+
+    \item \textit{Backdoor $DD$ + Backdoor $M$}: This requires the adversary to simultaneously train two entirely distinct, hidden triggers into two radically different architectures using the same data stream. Optimising for both simultaneously, without them interfering with one another, is likely practically impossible.
+\end{itemize}

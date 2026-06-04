@@ -180,6 +180,25 @@ By anticipating how the detector responds to changes in monitored statistics, th
 % Such attacks are particularly effective against detectors designed to respond to gradual or incremental drift. By aligning the induced change with expected temporal patterns, the adversary can ensure that adaptation mechanisms are triggered naturally, causing the learner to internalise a corrupted concept as if it were benign~\cite{Koh_2021}.
 
 
+\section{Class-Incremental Learning and Exemplar Memory}
+\label{sec:exemplar memory}
+The drift detectors described so far are concerned with deciding when to adapt. Equally important is how a model is updated once said adaptation is triggered. When a learner is only retrained on newly arrived data, it can overwrite previously learned knowledge, a phenomenon known as catastrophic forgetting~\cite{French_1999}. This is especially problematic in streaming settings where reoccurring concepts are common and may reappear after the model has specialised to more recent traffic.
+
+A common countermeasure is rehearsal (or replay), where a small memory of representative past examples, called exemplars, is retained and used alongside new data during each update~\cite{Robins_1995}. Given a finite memory budget, an important question is which examples to keep so the retained subset remains faithful to the data it summarises.
+
+A widely adopted solution is the iCaRL (Incremental Classifier and Representation Learning) mechanism introduced by Rebuffi et al.~\cite{Rebuffi_2017}, which classifies using a nearest-mean-of-exemplars rule. Given a class with feature embedding $\phi(\cdot)$ and true mean
+\begin{equation}
+    \mu = \frac{1}{n}\sum_{x} \phi(x),
+\end{equation}
+herding greedily builds an ordered exemplar set $\{p_1, \dots, p_m\}$ of target size $m$, selecting the $k^{\text{th}}$ exemplar as the sample that brings the running exemplar mean closest to $\mu$:
+\begin{equation} \label{eq:herding}
+    p_k = \arg\min_{x} \left\| \mu - \frac{1}{k}\left( \phi(x) + \sum_{j=1}^{k-1} \phi(p_j) \right) \right\|.
+\end{equation}
+Because each successive exemplar maximally reduces the difference between the stored mean and the true class mean, any prefix of the resulting set remains representative of the class centroid, and the budget $m$ can be adjusted without re-selecting from scratch.
+
+This property is particularly valuable for nearest-mean classifiers operating under bounded memory. Since the class prototype is computed from the stored exemplars rather than the full data history, a herded memory preserves the representation of that prototype while bounding both storage and retraining cost. This makes it a natural memory-management policy for an NCM-based drift detector that must register newly discovered concepts and retain a limited, representative sample of each for future retraining, a point we return to when describing the drift detector adopted in this thesis (\cref{sec:contrastive_ncm}).
+
+
 \section{Adversarially Robust Solutions}
 \label{sec:robust solutions}
 To address the vulnerabilities of traditional detectors, recent research proposes methods explicitly designed to withstand adversarial manipulation. These solutions leverage techniques like contrastive embedding and generative modelling to differentiate between natural and adversarial distributional shifts.

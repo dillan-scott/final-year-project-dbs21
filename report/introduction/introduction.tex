@@ -16,18 +16,18 @@ This discrepancy is significant: the coupling between detector and base learner 
 
 \section{Scope}
 \label{sec:scope}
-This thesis examines adversarial attacks against an adaptive learning pipeline consisting of a static MLP classifier coupled with the contrastive autoencoder and Nearest Class Mean detector~\cite{Kuppa_2022}. The work is centred on understanding whether this state-of-the-art robust detector is sufficient to protect a trigger-dependent base learner when the two components are deployed together as a coupled system.
+We examine adversarial attacks against an adaptive learning pipeline consisting of a static MLP classifier coupled with the contrastive autoencoder and Nearest Class Mean detector~\cite{Kuppa_2022}. The work is centred on understanding whether this state-of-the-art robust detector is sufficient to protect a trigger-dependent base learner when the two components are deployed together as a coupled system.
 
-This work takes an adversarial perspective, proposing attacks against the coupled system, covering those on each element both individually and simultaneously. A representative subset of these attacks is then implemented and evaluated, selected to span the primary ways in which an adversary could exploit the system's coupling.
+We take an adversarial perspective, proposing attacks against the coupled system that target each element both individually and in combination. We then attack the surfaces identified by this taxonomy to characterise exactly where the system is vulnerable.
 
 % Rather than introducing a new drift detection algorithm, this thesis adopts an adversarial perspective. It proposes a novel feedback-guided attack strategy that operates under a closed-loop threat model, in which the attacker adapts their behaviour based on downstream observable feedback. This attack is used as a systematic stress test for existing adversarially robust drift detectors, allowing the evaluation of their effectiveness under stronger and more realistic assumptions about the attacker's behaviour.
 
-The aim is not to refute the robustness claims of Kuppa and Le-Khac~\cite{Kuppa_2022} but to test whether those claims extend to the protection of a downstream base learner in a realistic adaptive learning architecture. By doing so, the thesis seeks to clarify the practical security guarantees offered by the detector and identify the conditions under which the coupled system remains vulnerable.
+We do not refute the robustness claims of Kuppa and Le-Khac~\cite{Kuppa_2022}; rather, we test whether those claims extend to the protection of a downstream base learner in a realistic adaptive learning architecture. In doing so, we clarify the practical security guarantees offered by the detector and identify the conditions under which the coupled system remains vulnerable.
 
 \section{Objectives}
-The primary objective of this research is to determine whether the robustness of the contrastive autoencoder and NCM detector is sufficient to protect a static, trigger-dependent base learner from corruption when the two components are deployed as a coupled adaptive learning system.
+The primary objective of this research is to characterise how an adversary can corrupt a coupled adaptive learning system equipped with the contrastive autoencoder and NCM detector, and at what budget such corruption can be sustained.
 
-First, it formalises a taxonomy of attacks against the coupled system and identifies the structural properties of trigger-dependent architectures that create attack surfaces absent from prior evaluations. Second, it implements and experimentally analyses whether each attack can successfully harm the base learner's predictive capabilities.
+We meet this objective in three parts. First, we formalise a threat model and attack taxonomy for the coupled system, identifying attack surfaces that a trigger-dependent architecture exposes but a continuous-update architecture does not. Second, we attack these surfaces to determine whether the base learner can be corrupted, and at what ongoing poisoning budget. Third, we attack the detector itself to determine whether its representation can be corrupted to control the base learner's adaptation, and at what cost to its sensitivity to genuine concept drift.
 
 % The primary objective of this research is to critically evaluate the resilience of concept drift detection mechanisms against adaptive adversaries. First, this thesis will formalise a taxonomy of threat models, explicitly distinguishing between open-loop and closed-loop, to define how attackers exploit system outputs. Building on this framework, the thesis aims to propose a novel feedback-guided attack strategy designed to induce semantic drift while avoiding detection thresholds.
 
@@ -36,17 +36,13 @@ First, it formalises a taxonomy of attacks against the coupled system and identi
 
 \section{Research Questions}
 \label{sec:research questions}
-To meet the objective described in the previous section, this thesis addresses the following questions:
+To meet the objectives described in the previous section, we address the following research questions:
 \begin{enumerate}
-    \item How can the capabilities and knowledge of an adversary targeting a coupled adaptive learning system be formally defined, and what attack surfaces are introduced by trigger-dependent base learner architectures that are absent when the base learner updates continuously?
+    \item What attack surfaces does the coupling between detector and trigger-dependent base learner introduce that a continuous-update architecture does not?
 
-    \item Can an adversary successfully corrupt the predictive accuracy of a static base learner by exploiting the retraining mechanism of a system equipped with the contrastive autoencoder and NCM detector, despite its robustness properties?
-    
-    \item Can an adversary corrupt the detector's learned representation sufficiently to manipulate the adaptation of the base learner — either by forcing false retraining events or by suppressing valid ones?
+    \item Can an adversary exploit these surfaces to corrupt the base learner, and at what ongoing poisoning budget?
 
-    \item What ongoing poisoning budget, in instance count and perturbation magnitude, is required to maintain these adversarial effects against a detector that continuously updates its representation of the data distribution?
-
-    \item What is the trade-off between the detector's robustness to adversarial poisoning and its sensitivity to genuine concept drift, and how does this manifest in a trigger-dependent coupled architecture?
+    \item Can the detector's representation be corrupted to control the base learner's adaptation, and at what cost to its drift sensitivity?
 \end{enumerate}
 
 \section{Thesis Structure}
@@ -58,7 +54,7 @@ The remainder of this thesis is organised as follows:
     
     \item \cref{ch:attack_taxonomy_objectives} presents a taxonomy of attacks against the coupled system and introduces the idea of maintenance cost. 
     
-    \item \cref{ch:implementation} describes the implementation of the coupled system, including four architectural refinements to clarify the underspecified components of the paper's intended architecture, and the implementation of a representative subset of attacks against the system.
+    \item \cref{ch:implementation} describes the implementation of the coupled system, including four architectural refinements that clarify the underspecified components of the paper's intended architecture, and attacks selected for evaluation.
     
     \item \cref{ch:evaluation} evaluates the implemented attacks against the coupled system, measuring their impact on the base learner's predictive performance and the detector's representation.
     

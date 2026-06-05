@@ -1,7 +1,7 @@
 \chapter{Target System and Threat Model}
 \label{ch:target_system_threat_model}
 
-This chapter formalises the adaptive learning pipeline targeted in this research and defines the capabilities and knowledge of an adversary attempting to compromise it. First, the architecture of the target system is detailed, consisting of a base learner coupled and an adversarially robust drift detector. Subsequently, a complete threat model is established, specifying the attacker's objectives, assumed knowledge, and operational capabilities.
+This chapter formalises the adaptive learning pipeline targeted in this research and defines the adversary attempting to compromise it. We first describe the architecture of the target system, a static base learner coupled to an adversarially robust drift detector, and then establish the threat model under which the attacks of \cref{ch:attack_taxonomy_objectives,ch:evaluation} are mounted.
 
 \section{Target System Architecture}
 The system under evaluation addresses concept drift in the typical way: by augmenting the base learner with a drift detector, as mentioned in \cref{sec:drift_detection}. However, this approach differs in that the supervisory module is dynamic. While traditional detectors rely on fixed statistical thresholds or heuristics, this architecture utilises a trainable drift detector. It learns a compressed latent representation of the known data distribution and measures deviation using class prototypes in that space to identify distributional shifts. This approach is intended to provide robustness to adversarial manipulation, a property which is scrutinised in the following chapters of this thesis.
@@ -9,33 +9,26 @@ The system under evaluation addresses concept drift in the typical way: by augme
 The two components of the system, and the manner in which they are integrated, is described below.
 
 \subsection{The Base Learner}
-The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to classify the network flows as either \textsc{Benign} (class 0) or \textsc{Attack} (class 1). It consists of three fully-connected hidden layers of width 256, 128, 64 respectively, followed by a two-class output layer, giving:
+The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to classify network flows as either \textsc{Benign} (class 0) or \textsc{Attack} (class 1), taking a $d$-dimensional feature vector as input:
 \[
   \mathcal{M}: \mathbb{R}^{d} \;\to\; \mathbb{R}^{2}
 \]
 
 \subsection{The Drift Detector}
-The drift detector $\mathcal{D}$ is the Contrastive Nearest Class Mean Detector (ContrastiveNCM)~\cite{Kuppa_2022}. Its architecture and training procedure are described in full in \cref{sec:contrastive_ncm}; here we only discuss the configuration choices specific to this experimental setup.
-
-The encoder is trained with a latent dimension of $r = 32$, a hidden layer of width 64, and a contrastive temperature of $\tau = 0.1$, matching the hyperparameters reported in the original paper. The concept-discovery threshold is set to $T = 3.5$, again following the paper\cite{Kuppa_2022}.
-
-\subsubsection{Drift threshold calibration}
-The distance threshold $\tau_{\text{drift}}$, which determines whether an individual sample is flagged as drifted, is not fixed a priori. After initial training on the known-class data, it is set to the 95th percentile of NCM distances computed on a held-out calibration split containing only known-class instances. This yields a nominal false-positive rate of approximately 5\% on in-distribution traffic while correctly flagging novel-class samples, which are far from all known prototypes in the latent space. Crucially, the calibration requires no labels from novel classes, which is consistent with the deployment constraint that novel attacks have not yet been observed at training time.
+The drift detector $\mathcal{D}$ is the Contrastive Nearest Class Mean detector (ContrastiveNCM)~\cite{Kuppa_2022}, whose components are described in \cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in \cref{ch:implementation}.
 
 \subsection{System Integration and Adaptation Cycle}
-...
-\todo[color=yellow]{Detail the exact adaptation mechanism here: e.g., Does it buffer new data to train a replacement tree in the background? Does it immediately discard the old tree?}
+The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. On each incoming batch, $\mathcal{D}$ flags drifted samples and accumulates them in the concept-discovery buffer; once the accumulated displacement crosses $T$, a new prototype is registered, the encoder is retrained, and $\mathcal{M}$ is replaced by a new model trained on the updated dataset. The specific composition of the retraining dataset at each trigger is an architectural choice we return to in \cref{ch:implementation}. This coupling is intended to allow $\mathcal{M}$ to inherit both $\mathcal{D}$'s robustness properties and its decision latency. 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{target_system_threat_model/target architecture.drawio.png}
-    \caption{The general architecture of the target system}
+    \includegraphics[width=\linewidth]{target_system_threat_model/target_architecture.drawio.pdf}
+    \caption{The architecture of the target system. $\mathcal{D}$ and $\mathcal{M}$ both consume the input stream in parallel: $\mathcal{M}$ produces classifications while $\mathcal{D}$ monitors for drift. When $\|\Delta\| > T$, the coupling layer triggers a retraining event (dashed) that updates $\mathcal{D}$ (registering a new prototype and retraining the encoder) and replaces $\mathcal{M}$ with a new model trained on the updated dataset.}
     \label{fig:target architecture}
 \end{figure}
-\todo[color=yellow]{Figure can be improved}
 
 \section{Threat Model}
-To systematically evaluate the security of the target system, it is necessary to define the parameters under which an adversary operates. The threat model establishes the attacker's objectives, their level of knowledge about the system, and their practical capabilities within the environment.
+To systematically evaluate the security of the target system, we define the parameters under which an adversary operates. The threat model establishes the attacker's objectives, their level of knowledge about the system, and their practical capabilities within the environment.
 
 \subsection{Attacker Objectives}
 The primary objective of an adversary is to compromise the predictive accuracy or operational efficiency of the system as a whole. In this context, this manifests in two distinct ways:

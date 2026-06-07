@@ -29,32 +29,48 @@ The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent a
 \end{figure}
 
 \section{Threat Model}
-To systematically evaluate the security of the target system, we define the parameters under which an adversary operates. The threat model establishes the attacker's objectives, their level of knowledge about the system, and their practical capabilities within the environment.
+To systematically evaluate the security of the target system, we define the parameters under which an adversary operates. We specify their objectives, their knowledge of the system, and their practical capabilities within the environment.
+
+We model the input as a stream of mini-batches $\mathcal{B}_1, \mathcal{B}_2, \dots$, where each batch $\mathcal{B}_t = \{(x_i, y_i)\}_{i=1}^{n_t}$ contains $n_t$ network flows with feature vectors $x_i \in \mathbb{R}^{d}$ and labels $y_i \in \{0, 1\}$ (\textsc{Benign} or \textsc{Attack}). The adversary does not overwrite genuine incoming instances; rather, they inject additional crafted flows into it, bounded by a per-batch injection budget.
+
+\begin{definition}[Injection budget]
+\label{def:injection_budget}
+For an injection rate $p \in [0, 1]$, the adversary may add up to $\lfloor\,p\, n_t \,\rfloor$ crafted flows to each batch. Writing $\mathcal{A}_t \subset \mathbb{R}^{d} \times \{0, 1\}$ for the injected set, the set of admissible poisoned batches obtainable from a clean batch $\mathcal{B}_t$ is
+\begin{equation}
+  \mathcal{T}_p(\mathcal{B}_t) = \left\{\, \mathcal{B}_t \cup \mathcal{A}_t \;:\; \lvert \mathcal{A}_t \rvert \le \lfloor\,p\, n_t\,\rfloor \,\right\}.
+  \label{eq:injection_budget}
+\end{equation}
+\end{definition}
+
+Because injected flows augment rather than replace the batch, an injection rate $p$ contaminates a fraction $p / (1 + p)$ of the resulting batch. Sustaining an attack across a window of $W$ consecutive batches costs at most $p \sum_{t=1}^{W} n_t$ injected flows in total; we characterise this budget empirically in \cref{ch:evaluation}.
 
 \subsection{Attacker Objectives}
-The primary objective of an adversary is to compromise the predictive accuracy or operational efficiency of the system as a whole. In this context, this manifests in two distinct ways:
+The primary objective of an adversary is to degrade the predictive performance of the coupled system on genuine traffic. Since $\mathcal{M}$ is static between retraining events, it cannot be corrupted directly. The adversary can act only through the coupling layer of \cref{sec:adaptation_cycle}, by influencing whether or not a retraining event fires and the data on which $\mathcal{M}$ is subsequently rebuilt. This manifests in two distinct ways:
 \begin{itemize}
-    \item \textit{Forcing False Adaptation}: The attacker aims to deceive the RRBM-DD into signalling a drift when the underlying distribution is stable, causing the Decision Tree to unnecessarily adapt to potentially malicious data, degrading its accuracy or consuming computational resources.
+    \item \textit{Forcing False Adaptation}: the adversary piggybacks on a genuine retraining event or induces the coupling layer to fire while the underlying distribution is stable, causing $\mathcal{M}$ to be rebuilt on adversary-influenced data and consuming computational resources.
 
-    \item \textit{Impairing Adaptation}: The attacker injects data that masks genuine concept drift in some way, preventing the RRBM-DD from detecting valid shifts and forcing the Decision Tree to rely on an outdated model.
+    \item \textit{Impairing Adaptation}: the adversary masks genuine drift so that the coupling layer does not fire when it should, leaving $\mathcal{M}$ stale. A subtler variant lets the event fire but biases the composition of the retraining set so that the rebuilt $\mathcal{M}$ is itself degraded.
 \end{itemize}
 
 \subsection{Attacker Knowledge}
-The viability of an attack heavily depends on the adversary's understanding of the target system. The attacker's knowledge can be framed under 3 different assumptions:
+The viability of an attack depends heavily on the adversary's understanding of the target system. We frame the attacker's knowledge under three assumptions:
 \begin{itemize}
-    \item \textit{White-Box:} The adversary possesses complete knowledge of the system. This includes but is not limited to the RRBM-DD's exact architecture, its current weights, the size of the mini-batches, and the specific statistical thresholds used in the Granger causality test.
+    \item \textit{White-Box}: the adversary possesses complete knowledge of the system, including $\mathcal{D}$'s encoder weights and class prototypes, the current parameters of $\mathcal{M}$, the batch size, the coupling layer's firing conditions, and the calibrated values of the thresholds $T_{drift}$ and $T$.
 
-    \item \textit{Grey-Box:} The adversary knows the general system architecture (e.g. that an RRBM-DD and a Decision Tree are being used) and the features of the data stream, but lacks access to the internal weights, sliding window states, or exact hyperparameters in real-time.
+    \item \textit{Grey-Box}: the adversary knows the general architecture, that a Contrastive NCM detector $\mathcal{D}$ is coupled to an MLP base learner $\mathcal{M}$ via the adaptation cycle of \cref{sec:adaptation_cycle}, and the features of the stream, but lacks real-time access to the internal weights, the concept-discovery buffer, or the exact threshold and gate values.
 
-    \item \textit{Black-Box:} The adversary is unaware of the specific detection algorithms or base learner implemented. They can only observe the output predictions and the raw incoming data stream, meaning they must infer further details like the occurrence of a drift signal, based on changes in the system's external behaviour.
+    \item \textit{Black-Box}: the adversary is unaware of the specific detector or base learner implemented. They observe only the output predictions and the raw incoming stream, and must infer system behaviour from changes in its external responses.
 \end{itemize}
 
 \subsection{Attacker Capabilities}
-In the context of data stream mining, the adversary is assumed to have write access to the data ingestion pipeline, allowing them to manipulate the stream before it enters the predictive system. The adversary's capabilities are defined by the following constraints:
+\label{sec:attacker_capabilities}
+The adversary is assumed to have write access to the data ingestion pipeline, allowing them to inject crafted flows into the stream before it reaches the system, subject to the budget of \cref{def:injection_budget}. Two manipulation capabilities are available:
 \begin{itemize}
-    \item \textit{Feature Manipulation}: The ability to perturb the feature vector $X$ of incoming data points.
+    \item \textit{Label Flipping}: assigning an injected flow a label that contradicts its true class.
 
-    \item \textit{Label Flipping}: The ability to alter the ground-truth label $y$ provided to the system.
-    
-    \item \textit{Injection Budget}: An adversary cannot replace 100\% of the stream, as this would trivially overwrite the system and would likely be flagged by upstream anomaly detection.
+    \item \textit{Feature Manipulation}: perturbing the feature vector of an injected flow within a bounded budget; exercised to craft known-class flows that cross $\mathcal{D}$'s drift threshold without forming a genuine new class. Constraining such perturbations to protocol-valid flows is left to future work (\cref{ch:conclusion}).
 \end{itemize}
+The budget $p < 1$ reflects the assumption that an adversary cannot overwrite the entire stream: doing so would be trivially detectable by upstream anomaly detection.
+
+\subsection{Adopted Threat Model}
+The experiments of \cref{ch:evaluation} operate primarily under the grey-box setting. The adversary knows the coupled $\mathcal{D}$--$\mathcal{M}$ architecture and the structure of the adaptation cycle, but has no access to the live encoder weights, the prototype set, the contents of the concept-discovery buffer, or the calibrated threshold and gate values. Within this setting we exercise both primitives of \cref{sec:attacker_capabilities}: label-flipped injection (for the poisoning and suppression attacks) and feature-space perturbation (for the false-positive attack on $\mathcal{D}$).

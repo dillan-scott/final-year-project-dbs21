@@ -6,7 +6,7 @@ This chapter formalises the adaptive learning pipeline targeted in this research
 \section{Target System Architecture}
 The system under evaluation addresses concept drift in the typical way: by augmenting the base learner with a drift detector, as mentioned in \cref{sec:drift_detection}. However, this approach differs in that the supervisory module is dynamic. While traditional detectors rely on fixed statistical thresholds or heuristics, this architecture utilises a trainable drift detector. It learns a compressed latent representation of the known data distribution and measures deviation using class prototypes in that space to identify distributional shifts. This approach is intended to provide robustness to adversarial manipulation, a property which is scrutinised in the following chapters of this thesis.
 
-The two components of the system, and the manner in which they are integrated, is described below.
+The two components of the system, and the manner in which they are integrated, are described below.
 
 \subsection{The Base Learner}
 The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to classify network flows as either \textsc{Benign} (class 0) or \textsc{Attack} (class 1), taking a $d$-dimensional feature vector as input:
@@ -15,11 +15,11 @@ The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to cla
 \]
 
 \subsection{The Drift Detector}
-The drift detector $\mathcal{D}$ is the Contrastive Nearest Class Mean detector (ContrastiveNCM)~\cite{Kuppa_2022}, whose components are described in \cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in \cref{ch:implementation}.
+The drift detector $\mathcal{D}$ is the Contrastive NCM detector of Kuppa and Le-Khac~\cite{Kuppa_2022}, whose components are described in \cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in \cref{ch:implementation}.
 
 \subsection{System Integration and Adaptation Cycle}
 \label{sec:adaptation_cycle}
-The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. Following the concept-discovery mechanism of~\cref{sec:concept_discovery}, $\mathcal{D}$ flags drifted samples in each batch and accumulates them in the concept-discovery buffer. In the formulation of Kuppa and Le-Khac~\cite{Kuppa_2022}, a new concept is registered once the accumulated displacement crosses $T$ (\cref{eq:concept-threshold}). In our coupled system, this displacement test is necessary but not sufficient to trigger a full retraining event. The paper leaves the precise coupling mechanism between $\mathcal{D}$ and $\mathcal{M}$ under-specified, therefore we adopt the design specified in~\cref{ch:implementation}.
+The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. Following the concept-discovery mechanism of~\cref{sec:concept_discovery}, $\mathcal{D}$ flags drifted samples in each batch and accumulates them in the concept-discovery buffer. In the formulation of Kuppa and Le-Khac~\cite{Kuppa_2022}, a new concept is registered once the accumulated displacement crosses $T$ (\cref{eq:concept-threshold}). In our coupled system, this displacement test is necessary but not sufficient to trigger a full retraining event. The paper leaves the precise coupling mechanism between $\mathcal{D}$ and $\mathcal{M}$ under-specified; therefore we adopt the design specified in~\cref{ch:implementation}.
 
 \begin{figure}[h]
     \centering
@@ -31,7 +31,7 @@ The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent a
 \section{Threat Model}
 To systematically evaluate the security of the target system, we define the parameters under which an adversary operates. We specify their objectives, their knowledge of the system, and their practical capabilities within the environment.
 
-We model the input as a stream of mini-batches $\mathcal{B}_1, \mathcal{B}_2, \dots$, where each batch $\mathcal{B}_t = \{(x_i, y_i)\}_{i=1}^{n_t}$ contains $n_t$ network flows with feature vectors $x_i \in \mathbb{R}^{d}$ and labels $y_i \in \{0, 1\}$ (\textsc{Benign} or \textsc{Attack}). The adversary does not overwrite genuine incoming instances; rather, they inject additional crafted flows into it, bounded by a per-batch injection budget.
+We model the input as a stream of mini-batches $\mathcal{B}_1, \mathcal{B}_2, \dots$, where each batch $\mathcal{B}_t = \{(x_i, y_i)\}_{i=1}^{n_t}$ contains $n_t$ network flows with feature vectors $x_i \in \mathbb{R}^{d}$ and labels $y_i \in \{0, 1\}$ (\textsc{Benign} or \textsc{Attack}). The adversary does not overwrite genuine incoming instances; rather, they inject additional crafted flows into the stream, bounded by a per-batch injection budget.
 
 \begin{definition}[Injection budget]
 \label{def:injection_budget}

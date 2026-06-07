@@ -1,7 +1,7 @@
 \chapter{Background}
 \label{ch:background}
 
-This chapter establishes the theoretical foundations and reviews the relevant literature in order to contextualise the latter contents of this thesis. It begins by formally defining concept drift and outlining its taxonomy based on probabilistic decomposition and temporal characteristics. Subsequently, the general architecture of drift detection systems is analysed, alongside a review of some existing concept drift detectors and their inherent limitations. The chapter then moves on to consider a security perspective, introducing the notion of adversarial concept drift, where distributional shifts are manipulated by potentially malicious actors. Before turning to defences, it introduces the foundations of class-incremental learning and exemplar-based memory, which underpin how adaptive learners update without forgetting. Finally, the chapter concludes by discussing the already existing robust solutions, which have been proposed to mitigate these challenges.
+This chapter establishes the theoretical foundations and reviews the relevant literature in order to contextualise the later contents of this thesis. It begins by formally defining concept drift and outlining its taxonomy based on probabilistic decomposition and temporal characteristics. Subsequently, the general architecture of drift detection systems is analysed, alongside a review of some existing concept drift detectors and their inherent limitations. The chapter then moves on to consider a security perspective, introducing the notion of adversarial concept drift, where distributional shifts are manipulated by potentially malicious actors. Before turning to defences, it introduces the foundations of class-incremental learning and exemplar-based memory, which underpin how adaptive learners update without forgetting. Finally, the chapter concludes by discussing the already existing robust solutions, which have been proposed to mitigate these challenges.
 
 \section{Concept Drift}
 Concept drift generally refers to changes in the statistical relationship between input features and target labels, characterised as a change in the true joint distribution $p(X, y)$~\cite{Gao_2007}. Formally, concept drift between time points $t_0$ and $t_1$ is said to occur when
@@ -25,7 +25,7 @@ where $p(y \mid X)$ is the conditional distribution of the target given the inpu
 \end{enumerate}
 
 \subsubsection{Temporal Characteristics}
-In addition to the above types, based on probabilities, concept drift can be categorised based on how the change occurs over time. Namely, four common patterns are shown in~\cref{fig:drift types}~\cite{Lu_2018}
+In addition to the above types, based on probabilities, concept drift can be categorised based on how the change occurs over time. Namely, four common patterns are shown in~\cref{fig:drift types}~\cite{Lu_2018}.
 
 \begin{enumerate}
     \item \textit{Sudden/Abrupt drift} is when the instance distribution or concept changes within a very short time frame. The previous concept immediately becomes invalid, and the learner must adapt quickly to maintain performance~\cite{Korycki_2022}.
@@ -34,7 +34,7 @@ In addition to the above types, based on probabilities, concept drift can be cat
     
     \item \textit{Incremental drift} is when there is a smooth and continuous progression from one concept to another through a series of intermediate concepts~\cite{Gama_2014, Korycki_2022}.
     
-    \item \textit{Reoccurring concepts} refers to when previously seen concepts reappear after some time, such as in seasonal or cyclical patterns~\cite{Gama_2014}. They may reappear both suddenly or incrementally~\cite{Guzy_2020}.
+    \item \textit{Reoccurring concepts} refers to when previously seen concepts reappear after some time, such as in seasonal or cyclical patterns~\cite{Gama_2014}. They may reappear either suddenly or incrementally~\cite{Guzy_2020}.
 \end{enumerate}
 
 \begin{figure}[h]
@@ -75,11 +75,11 @@ These methods monitor the online performance of the base learner (e.g. classific
 \begin{itemize}
     \item \textit{Drift Detection Method (DDM)}~\cite{Gama_2004}: This method models the number of errors as a random variable from a Binomial distribution. It tracks the online error rate $p_t$ and its standard deviation $s_t = \sqrt{p_t(1-p_t)/t}$ at time $t$. The algorithm maintains the minimum values observed so far, $p_{min}$ and $s_{min}$, updating them whenever $p_t + s_t < p_{min} + s_{min}$. A warning level is triggered if: 
     \begin{equation} \label{eq:DDM warning}
-        p_t + s_t \geq p_{min} + 2s_{min}.
+        p_t + s_t \geq p_{min} + 2s_{min},
     \end{equation}
     at which point incoming examples are buffered while using the old learner for predictions. If the error rate continues to rise and drift is confirmed via the condition: 
     \begin{equation} \label{eq:DDM confirmation}
-        p_t + s_t \geq p_{min} + 3s_{min}
+        p_t + s_t \geq p_{min} + 3s_{min},
     \end{equation}
     a new learner is induced using the buffered examples, and the old learner is discarded.
     % DDM is effective for detecting abrupt drift but can be less sensitive to gradual changes or noisy data streams.
@@ -88,7 +88,7 @@ These methods monitor the online performance of the base learner (e.g. classific
     \begin{equation} \label{eq:ADWIN threshold}
         |\hat{\mu}_{W_0} - \hat{\mu}_{W_1}| \geq \epsilon_{cut}
     \end{equation}
-    where $\epsilon_{cut}$ is an adaptive threshold (determined using Hoeffding bounds and a confidence interval $\delta$). When this threshold is reached, the historical data ($W_{0}$) is discarded as the two sub-windows are seen to have come from different data distributions. The author also proved that the false positive and false negative rates are bounded by $\delta$.
+    where $\epsilon_{cut}$ is an adaptive threshold (determined using Hoeffding bounds and a confidence interval $\delta$). When this threshold is reached, the historical data ($W_{0}$) is discarded as the two sub-windows are seen to have come from different data distributions. The author's also proved that the false positive and false negative rates are bounded by $\delta$.
 \end{itemize}
 
 \subsubsection{Data Distribution-Based Detectors}
@@ -109,7 +109,7 @@ In contrast, these methods monitor the statistical properties of the input featu
 \end{itemize}
 
 \subsection{Limitations and Weaknesses}
-While the drift detectors described above do provide robust mechanisms for adaptation, they are subject to inherent limitations and trade-offs between sensitivity (minimising false negatives) and specificity (minimising false positives). Rather than arising from flawed algorithms, many of these weaknesses are due to the statistical assumptions made by classical drift detection. Most notably, finite-sample estimation, approximate stationarity within windows, and the use of fixed confidence bounds to identify change.
+While the drift detectors described above do provide robust mechanisms for adaptation, they are subject to inherent limitations and trade-offs between sensitivity (minimising false negatives) and specificity (minimising false positives). Rather than arising from flawed algorithms, many of these weaknesses are due to the statistical assumptions made by classical drift detection; most notably, finite-sample estimation, approximate stationarity within windows, and the use of fixed confidence bounds to identify change.
 
 Importantly, these limitations can be mapped onto the general architecture of drift detectors introduced earlier in~\cref{sec:drift detection architecture}. Choices made at the level of the \textit{observation source} (e.g. error rates or feature statistics), the \textit{summary mechanism} (e.g. windowing or cumulative statistics), and the \textit{change test} (e.g. hypothesis tests or thresholds) impose constraints on what types of drift can be reliably identified and how quickly.
 
@@ -208,14 +208,14 @@ To counter instance-based poisoning, the model is trained with a robust gradient
 
 Crucially, Korycki and Krawczyk evaluate the RRBM-DD as part of a coupled adaptive system where the downstream base learner is updated continuously. They employ an adaptive Hoeffding tree that incrementally revises its splits with each new labelled sample, independently of any drift signal. In this configuration, the detector's role is advisory: it can declare that drift has occurred, causing a full retraining, but the model still adapts continuously and so does not depend entirely on the detector to trigger updates. This contrasts with the setting examined in this thesis, in which a static base learner updates only when explicitly triggered by the detector and therefore inherits both the detector's robustness properties and its decision latency. The implications of this difference for adversarial robustness are taken up in~\cref{ch:target_system_threat_model}.
 
-\subsection{Contrastive Autoencoder and Nearest Class Mean Classifier}
+\subsection{The Contrastive NCM Detector}
 \label{sec:contrastive_ncm}
 % Kuppa and Le-Khac~\cite{Kuppa_2022} propose a detector that maps high-dimensional inputs to a low-dimensional latent space using a contrastive loss objective. To create tighter class clusters, which are naturally more robust to adversarial perturbations, this objective places similar samples closer together while spreading dissimilar ones apart.
 
-Kuppa and Le-Khac~\cite{Kuppa_2022} introduce a drift detector composed of three key components. A contrastive autoencoder which maps each raw input vector into a lower dimensional latent space where same-class samples cluster tightly. A Nearest Class Mean (NCM) classifier which uses a hybrid Euclidean-Riemannian distance metric to decide whether the incoming sample is consistent with one of the known classes or should be flagged as drifted. Finally, a recursive concept-discovery mechanism which accumulates drifted embeddings over time and, once a threshold is exceeded, registers a new class prototype or concept. This combination is designed to remain robust under adversarial inputs by combining the manifold-tightening effect of contrastive training with a distance metric that distinguishes adversarial samples from genuine novel ones.
+Kuppa and Le-Khac~\cite{Kuppa_2022} introduce the Contrastive NCM detector, composed of three key components. A contrastive autoencoder which maps each raw input vector into a lower dimensional latent space where same-class samples cluster tightly. A Nearest Class Mean (NCM) classifier which uses a hybrid Euclidean-Riemannian distance metric to decide whether the incoming sample is consistent with one of the known classes or should be flagged as drifted. Finally, a recursive concept-discovery mechanism which accumulates drifted embeddings over time and, once a threshold is exceeded, registers a new class prototype or concept. This combination is designed to remain robust under adversarial inputs by combining the manifold-tightening effect of contrastive training with a distance metric that distinguishes adversarial samples from genuine novel ones.
 
 \subsubsection{Contrastive Autoencoder}
-The encoder $h : \mathbb{R}^d \to \mathbb{R}^r$ produces a latent embedding $h$ for each input $x$ of dimension $d$, where $r < d$. The autoencoder is trained jointly under two losses. The first is the standard mean-squared reconstruction loss
+The encoder $h : \mathbb{R}^d \to \mathbb{R}^r$ maps each $d$-dimensional input $x$ to a lower-dimensional latent embedding $h(x)$ (with $r < d$); we write $h_i = h(x_i)$ for the embedding of sample $x_i$. The autoencoder is trained jointly under two losses. The first is the standard mean-squared reconstruction loss
 \begin{equation} \label{eq:ncm-mse}
     \mathcal{L}_{\text{MSE}} = \| g(h(x)) - x \|^2_2,
 \end{equation}
@@ -234,14 +234,14 @@ Once the embedding network is trained, it is used to fit a Nearest Class Mean (N
 \begin{equation} \label{eq:ncm-prototype}
     \bm{h}_c = \frac{1}{n_c} \sum_{i}\left[y_i=c\right] \mathbf{h}_i,
 \end{equation}
-where $n_c$ is the number of training samples observed for class $c$. The assigned class for an incoming sample with embedding $\mathbf{h}_j$ is the one minimising a hybrid distance,
+where $n_c$ is the number of training samples observed for class $c$; this $\bm{h}_c$ is the full-data counterpart of the per-batch prototype $v_k$ in \cref{eq:ncm-contrastive}, both being the latent-space centroid of a class. The assigned class for an incoming sample with embedding $\mathbf{h}_j$ is the one minimising a hybrid distance,
 \begin{align}
     c_j^* &= \underset{c\in C}{\arg\min}\,D(\mathbf{h}_j, \bm{h}_c), \label{eq:ncm-classification}\\
     D(\mathbf{h}_j, \bm{h}_c) &= d_R(\mathbf{h}_j, \bm{h}_c) + \lambda_1(d_E(\mathbf{h}_j, \bm{h}_c)), \label{eq:hybrid-distance}
 \end{align}
 where $d_E$ is the Euclidean distance between the sample and the class prototype in latent space, $d_R$ is a Riemannian divergence (geometric distance) between them, $\lambda_1 > 0$ is a tuning parameter controlling their relative contribution, and $C$ is the set of known class indices.
 
-The two terms in the metric are intended to capture both instance and group level fidelity. The Euclidean term enforces instance level fidelity, while the Riemannian term enforces group level fidelity. Their combination is claimed to be robust against adversarially-crafted inputs by exploiting three properties of adversarial subspaces~\cite{Kuppa_2022}: (a) they are found in lower-probability regions compared to the data manifold; (b) their class distributions tend to vary from their closest natural sub-manifold; and (c) adversarial samples closest neighbour is their unperturbed source, rather than any other point in the training or test set.
+The two terms in the metric are intended to capture both instance and group level fidelity. The Euclidean term enforces instance level fidelity, while the Riemannian term enforces group level fidelity. Their combination is claimed to be robust against adversarially-crafted inputs by exploiting three properties of adversarial subspaces~\cite{Kuppa_2022}: (a) they are found in lower-probability regions compared to the data manifold; (b) their class distributions tend to vary from their closest natural sub-manifold; and (c) an adversarial sample's nearest neighbour is its unperturbed source, rather than any other point in the training or test set.
 
 The same hybrid distance is also used to identify drifted samples. A sample is taken as evidence of a previously unobserved class when its distance to the nearest known prototype is large. Concretely, a sample $x_j$ with embedding $\mathbf{h}_j$ is flagged as drifted when its minimum hybrid distance to the known prototypes exceeds a drift threshold $T_{drift}$,
 \begin{equation} \label{eq:drift-rule}
@@ -256,7 +256,7 @@ Drifted samples alone do not invalidate the model; instead, the detector treats 
     \Delta_{drift}^{t \to t+1} &= \bm{h}_c^{t+1} - \bm{h}_c^t = \Delta^{t-1 \to t} + \delta^{t-1 \to t},\\
     \delta_i^{t-1 \to t} &= \mathbf{z}_{i_{drift}}^t - \mathbf{z}_{i_{drift}}^{t-1}\: y_i\in c^t.
 \end{align}
-When the accumulated displacement crosses a threshold $T$,
+Intuitively, $\delta_i^{t-1 \to t}$ is the displacement of each drifted embedding between successive windows, and $\Delta_{drift}$ accumulates these displacements over time. Once the resulting magnitude is large enough, the buffered samples are taken to form a coherent new concept. When the accumulated displacement crosses a threshold $T$,
 \begin{equation} \label{eq:concept-threshold}
     \|\Delta_{drift}^{t \to t+1}\| > T,
 \end{equation}

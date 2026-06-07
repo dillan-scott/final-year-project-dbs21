@@ -18,12 +18,13 @@ The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to cla
 The drift detector $\mathcal{D}$ is the Contrastive Nearest Class Mean detector (ContrastiveNCM)~\cite{Kuppa_2022}, whose components are described in \cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in \cref{ch:implementation}.
 
 \subsection{System Integration and Adaptation Cycle}
-The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. On each incoming batch, $\mathcal{D}$ flags drifted samples and accumulates them in the concept-discovery buffer; once the accumulated displacement crosses $T$, a new prototype is registered, the encoder is retrained, and $\mathcal{M}$ is replaced by a new model trained on the updated dataset. The specific composition of the retraining dataset at each trigger is an architectural choice we return to in \cref{ch:implementation}. This coupling is intended to allow $\mathcal{M}$ to inherit both $\mathcal{D}$'s robustness properties and its decision latency. 
+\label{sec:adaptation_cycle}
+The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. Following the concept-discovery mechanism of~\cref{sec:concept_discovery}, $\mathcal{D}$ flags drifted samples in each batch and accumulates them in the concept-discovery buffer. In the formulation of Kuppa and Le-Khac~\cite{Kuppa_2022}, a new concept is registered once the accumulated displacement crosses $T$ (\cref{eq:concept-threshold}). In our coupled system, this displacement test is necessary but not sufficient to trigger a full retraining event. The paper leaves the precise coupling mechanism between $\mathcal{D}$ and $\mathcal{M}$ under-specified, therefore we adopt the design specified in~\cref{ch:implementation}.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{target_system_threat_model/target_architecture.drawio.pdf}
-    \caption{The architecture of the target system. $\mathcal{D}$ and $\mathcal{M}$ both consume the input stream in parallel: $\mathcal{M}$ produces classifications while $\mathcal{D}$ monitors for drift. When $\|\Delta\| > T$, the coupling layer triggers a retraining event (dashed) that updates $\mathcal{D}$ (registering a new prototype and retraining the encoder) and replaces $\mathcal{M}$ with a new model trained on the updated dataset.}
+    \caption{The architecture of the target system. $\mathcal{D}$ and $\mathcal{M}$ consume the input stream in parallel: $\mathcal{M}$ produces classifications while $\mathcal{D}$ monitors for drift, accumulating flagged samples in the concept-discovery buffer. When the paper's concept discovery condition is met ($\|\Delta\| > T$), the coupling layer (detailed in \cref{ch:implementation}) evaluates a set of additional conditions and, only if these are satisfied, triggers a retraining event (dashed): a new prototype is registered, and the encoder and $\mathcal{M}$ are replaced by new models trained on a new dataset composed by the coupling layer.}
     \label{fig:target architecture}
 \end{figure}
 
@@ -42,9 +43,9 @@ The primary objective of an adversary is to compromise the predictive accuracy o
 The viability of an attack heavily depends on the adversary's understanding of the target system. The attacker's knowledge can be framed under 3 different assumptions:
 \begin{itemize}
     \item \textit{White-Box:} The adversary possesses complete knowledge of the system. This includes but is not limited to the RRBM-DD's exact architecture, its current weights, the size of the mini-batches, and the specific statistical thresholds used in the Granger causality test.
-   
+
     \item \textit{Grey-Box:} The adversary knows the general system architecture (e.g. that an RRBM-DD and a Decision Tree are being used) and the features of the data stream, but lacks access to the internal weights, sliding window states, or exact hyperparameters in real-time.
-    
+
     \item \textit{Black-Box:} The adversary is unaware of the specific detection algorithms or base learner implemented. They can only observe the output predictions and the raw incoming data stream, meaning they must infer further details like the occurrence of a drift signal, based on changes in the system's external behaviour.
 \end{itemize}
 
@@ -52,7 +53,7 @@ The viability of an attack heavily depends on the adversary's understanding of t
 In the context of data stream mining, the adversary is assumed to have write access to the data ingestion pipeline, allowing them to manipulate the stream before it enters the predictive system. The adversary's capabilities are defined by the following constraints:
 \begin{itemize}
     \item \textit{Feature Manipulation}: The ability to perturb the feature vector $X$ of incoming data points.
-    
+
     \item \textit{Label Flipping}: The ability to alter the ground-truth label $y$ provided to the system.
     
     \item \textit{Injection Budget}: An adversary cannot replace 100\% of the stream, as this would trivially overwrite the system and would likely be flagged by upstream anomaly detection.

@@ -243,15 +243,20 @@ where $d_E$ is the Euclidean distance between the sample and the class prototype
 
 The two terms in the metric are intended to capture both instance and group level fidelity. The Euclidean term enforces instance level fidelity, while the Riemannian term enforces group level fidelity. Their combination is claimed to be robust against adversarially-crafted inputs by exploiting three properties of adversarial subspaces~\cite{Kuppa_2022}: (a) they are found in lower-probability regions compared to the data manifold; (b) their class distributions tend to vary from their closest natural sub-manifold; and (c) adversarial samples closest neighbour is their unperturbed source, rather than any other point in the training or test set.
 
-The same hybrid distance is also used to identify drifted samples. If a sample's minimum hybrid distance to every known prototype is large, it is taken as evidence that it does not belong to any previously observed class. In practice this is operationalised through a threshold (say $T_{drift}$), although Kuppa and Le-Khac~\cite{Kuppa_2022} do not formally specify how it should be derived. The calibration procedure adopted in this thesis is detailed in~\cref{ch:target_system_threat_model}.
+The same hybrid distance is also used to identify drifted samples. A sample is taken as evidence of a previously unobserved class when its distance to the nearest known prototype is large. Concretely, a sample $x_j$ with embedding $\mathbf{h}_j$ is flagged as drifted when its minimum hybrid distance to the known prototypes exceeds a drift threshold $T_{drift}$,
+\begin{equation} \label{eq:drift-rule}
+    \min_{c \in C} D(\mathbf{h}_j, \bm{h}_c) > T_{drift},
+\end{equation}
+where $D$ is the hybrid distance of \cref{eq:hybrid-distance} and $C$ is the set of known class indices. Kuppa and Le-Khac~\cite{Kuppa_2022} do not formally specify how $T_{drift}$ should be derived. We describe the calibration procedure adopted in this thesis in~\cref{ch:implementation}.
 
 \subsubsection{Concept Discovery}
+\label{sec:concept_discovery}
 Drifted samples alone do not invalidate the model; instead, the detector treats them as candidate evidence of a new class. Drifted embeddings $\{\mathbf{z}_{1_{drift}}^t, \mathbf{z}_{2_{drift}}^t, \dots\}$ produced during a time window $t$ are buffered, and the detector maintains a running accumulator
 \begin{align} \label{eq:concept-accumulator}
     \Delta_{drift}^{t \to t+1} &= \bm{h}_c^{t+1} - \bm{h}_c^t = \Delta^{t-1 \to t} + \delta^{t-1 \to t},\\
     \delta_i^{t-1 \to t} &= \mathbf{z}_{i_{drift}}^t - \mathbf{z}_{i_{drift}}^{t-1}\: y_i\in c^t.
 \end{align}
-When the accumulated displacement crosses a pre-defined threshold $T$,
+When the accumulated displacement crosses a threshold $T$,
 \begin{equation} \label{eq:concept-threshold}
     \|\Delta_{drift}^{t \to t+1}\| > T,
 \end{equation}

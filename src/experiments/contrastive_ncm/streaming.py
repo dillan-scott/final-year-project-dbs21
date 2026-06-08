@@ -21,36 +21,48 @@ from .training import calibrate_concept_threshold, build_known_exemplars
 class BatchResult:
     """Snapshot of one prequential batch's processing outcome, including M/DD
     metrics and system state."""
-    batch_idx:      int
-    day_idx:        int
-    drift_frac:     float
+
+    batch_idx: int
+    day_idx: int
+    drift_frac: float
     concepts_found: int
-    retrain_fired:  bool
-    n_poisoned:     int
-    buf_size:       int
-    accuracy:       float
-    f1:             float
-    fnr_novel:      float
-    extras:         dict = field(default_factory=dict)
+    retrain_fired: bool
+    n_poisoned: int
+    buf_size: int
+    accuracy: float
+    f1: float
+    fnr_novel: float
+    extras: dict = field(default_factory=dict)
 
     @classmethod
     def from_metrics(
         cls,
-        batch_idx: int, day_idx: int, drift_frac: float,
-        concepts_found: int, retrain_fired: bool, n_poisoned: int, buf_size: int,
+        batch_idx: int,
+        day_idx: int,
+        drift_frac: float,
+        concepts_found: int,
+        retrain_fired: bool,
+        n_poisoned: int,
+        buf_size: int,
         metrics: dict,
         extras_extra: dict | None = None,
-    ) -> 'BatchResult':
+    ) -> "BatchResult":
         """Build a BatchResult from an eval_base_learner dict + system extras."""
-        explicit = {'accuracy', 'f1', 'fnr_novel'}
+        explicit = {"accuracy", "f1", "fnr_novel"}
         extras = {k: v for k, v in metrics.items() if k not in explicit}
         if extras_extra:
             extras.update(extras_extra)
         return cls(
-            batch_idx=batch_idx, day_idx=day_idx, drift_frac=drift_frac,
-            concepts_found=concepts_found, retrain_fired=retrain_fired,
-            n_poisoned=n_poisoned, buf_size=buf_size,
-            accuracy=metrics['accuracy'], f1=metrics['f1'], fnr_novel=metrics['fnr_novel'],
+            batch_idx=batch_idx,
+            day_idx=day_idx,
+            drift_frac=drift_frac,
+            concepts_found=concepts_found,
+            retrain_fired=retrain_fired,
+            n_poisoned=n_poisoned,
+            buf_size=buf_size,
+            accuracy=metrics["accuracy"],
+            f1=metrics["f1"],
+            fnr_novel=metrics["fnr_novel"],
             extras=extras,
         )
 
@@ -82,34 +94,49 @@ class ConceptBuffer:
         self.y_buf = []
 
 
-class StaticDDStaticM:
+class StaticDStaticM:
     """M trained once, never retrains. Provides the reference FNR for attack impact"""
 
-    def __init__(self, base_learner: BaseLearnerMLP,
-                 X_eval: torch.Tensor, y_eval_bin: np.ndarray,
-                 novel_mask: np.ndarray,
-                 per_class_masks: Mapping[str, np.ndarray] | None = None):
+    def __init__(
+        self,
+        base_learner: BaseLearnerMLP,
+        X_eval: torch.Tensor,
+        y_eval_bin: np.ndarray,
+        novel_mask: np.ndarray,
+        per_class_masks: Mapping[str, np.ndarray] | None = None,
+    ):
         self.base_learner = base_learner
         self.X_eval = X_eval
         self.y_eval_bin = y_eval_bin
         self.novel_mask = novel_mask
         self.per_class_masks = per_class_masks or {}
 
-    def process_batch(self, batch_idx: int, day_b: np.ndarray, X_b: np.ndarray,
-                      y_b: np.ndarray, n_poisoned: int = 0) -> BatchResult:
-        m = eval_base_learner(self.base_learner, self.X_eval, self.y_eval_bin,
-                              self.novel_mask, self.per_class_masks)
+    def process_batch(
+        self,
+        batch_idx: int,
+        day_b: np.ndarray,
+        X_b: np.ndarray,
+        y_b: np.ndarray,
+        n_poisoned: int = 0,
+    ) -> BatchResult:
+        m = eval_base_learner(
+            self.base_learner, self.X_eval, self.y_eval_bin, self.novel_mask, self.per_class_masks
+        )
         stream_m = eval_on_stream_batch(self.base_learner, X_b, y_b)
         return BatchResult.from_metrics(
-            batch_idx=batch_idx, day_idx=int(round(float(day_b.mean()))),
-            drift_frac=float('nan'), concepts_found=0,
-            retrain_fired=False, n_poisoned=n_poisoned, buf_size=0,
+            batch_idx=batch_idx,
+            day_idx=int(round(float(day_b.mean()))),
+            drift_frac=float("nan"),
+            concepts_found=0,
+            retrain_fired=False,
+            n_poisoned=n_poisoned,
+            buf_size=0,
             metrics=m,
             extras_extra=stream_m,
         )
 
 
-class StaticDDAdaptiveM:
+class StaticDAdaptiveM:
     """DD encoder is held static (only NCM prototypes grow via concept discovery).
     M retrains from scratch on (concept buffer + known exemplars + accumulated novel
     exemplars) when concept discovery fires.
@@ -125,8 +152,8 @@ class StaticDDAdaptiveM:
     #   - MIN_ATTACK_FRAC_FOR_FIRE: composition floor — the buffer's attack fraction
     #     must exceed this to fire
     # Set BOTH to 0 to recover paper-literal behaviour.
-    MIN_ATTACK_FOR_FIRE       = 500
-    MIN_ATTACK_FRAC_FOR_FIRE  = 0.3
+    MIN_ATTACK_FOR_FIRE = 500
+    MIN_ATTACK_FRAC_FOR_FIRE = 0.3
 
     def __init__(
         self,
@@ -157,14 +184,19 @@ class StaticDDAdaptiveM:
         self.retrain_count = 0
 
     def process_batch(
-        self, batch_idx: int, day_b: np.ndarray,
-        X_b: np.ndarray, y_b: np.ndarray, concept_buf: ConceptBuffer,
+        self,
+        batch_idx: int,
+        day_b: np.ndarray,
+        X_b: np.ndarray,
+        y_b: np.ndarray,
+        concept_buf: ConceptBuffer,
         n_poisoned: int = 0,
     ) -> BatchResult:
         X_t = torch.from_numpy(X_b)
 
-        m = eval_base_learner(self.base_learner, self.X_eval, self.y_eval_bin,
-                              self.novel_mask, self.per_class_masks)
+        m = eval_base_learner(
+            self.base_learner, self.X_eval, self.y_eval_bin, self.novel_mask, self.per_class_masks
+        )
 
         _, is_drifted, _ = self.detector.detect(X_t)
         drift_frac = float(is_drifted.float().mean())
@@ -174,12 +206,14 @@ class StaticDDAdaptiveM:
         n_attack_in_buf = sum(int((y == 1).sum()) for y in concept_buf.y_buf)
         n_buf = concept_buf.size
         attack_frac = (n_attack_in_buf / n_buf) if n_buf > 0 else 0.0
-        allow_fire = (n_attack_in_buf >= self.MIN_ATTACK_FOR_FIRE
-                      and attack_frac >= self.MIN_ATTACK_FRAC_FOR_FIRE)
+        allow_fire = (
+            n_attack_in_buf >= self.MIN_ATTACK_FOR_FIRE
+            and attack_frac >= self.MIN_ATTACK_FRAC_FOR_FIRE
+        )
 
         concepts_found = 0
         for s in range(0, len(X_t), self.concept_batch):
-            sub = X_t[s:s + self.concept_batch]
+            sub = X_t[s : s + self.concept_batch]
             _, is_dr_sub, _ = self.detector.detect(sub)
             if is_dr_sub.any():
                 z_sub = self.detector.encode(sub[is_dr_sub])
@@ -192,10 +226,12 @@ class StaticDDAdaptiveM:
             y_buf = np.concatenate(concept_buf.y_buf)
             n_attack = int((y_buf == 1).sum())
             n_benign = int((y_buf == 0).sum())
-            print(f'  [FIRE {type(self).__name__}] '
-                  f'batch={batch_idx} day={int(round(float(day_b.mean())))} '
-                  f'buf={len(y_buf)} attack={n_attack} benign={n_benign} '
-                  f'concepts={concepts_found}')
+            print(
+                f"  [FIRE {type(self).__name__}] "
+                f"batch={batch_idx} day={int(round(float(day_b.mean())))} "
+                f"buf={len(y_buf)} attack={n_attack} benign={n_benign} "
+                f"concepts={concepts_found}"
+            )
             with torch.no_grad():
                 h_buf = self.detector.encode(torch.from_numpy(X_buf)).cpu()
             new_proto_idx = range(self.n_proto_at_last_retrain, self.detector.ncm.num_classes)
@@ -210,8 +246,12 @@ class StaticDDAdaptiveM:
             if harvested_X:
                 new_ex_X = np.vstack(harvested_X)
                 new_ex_y = np.concatenate(harvested_y)
-                self.novel_X = new_ex_X if self.novel_X is None else np.vstack([self.novel_X, new_ex_X])
-                self.novel_y = new_ex_y if self.novel_y is None else np.concatenate([self.novel_y, new_ex_y])
+                self.novel_X = (
+                    new_ex_X if self.novel_X is None else np.vstack([self.novel_X, new_ex_X])
+                )
+                self.novel_y = (
+                    new_ex_y if self.novel_y is None else np.concatenate([self.novel_y, new_ex_y])
+                )
             self.n_proto_at_last_retrain = self.detector.ncm.num_classes
             parts_X = [X_buf, self.X_ex]
             parts_y = [y_buf, self.y_ex]
@@ -227,16 +267,19 @@ class StaticDDAdaptiveM:
             retrain_fired = True
         stream_m = eval_on_stream_batch(self.base_learner, X_b, y_b)
         return BatchResult.from_metrics(
-            batch_idx=batch_idx, day_idx=int(round(float(day_b.mean()))),
-            drift_frac=drift_frac, concepts_found=concepts_found,
-            retrain_fired=retrain_fired, n_poisoned=n_poisoned,
+            batch_idx=batch_idx,
+            day_idx=int(round(float(day_b.mean()))),
+            drift_frac=drift_frac,
+            concepts_found=concepts_found,
+            retrain_fired=retrain_fired,
+            n_poisoned=n_poisoned,
             buf_size=concept_buf.size,
             metrics=m,
             extras_extra=stream_m,
         )
 
 
-class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
+class AdaptiveDAdaptiveM(StaticDAdaptiveM):
     """Both DD's encoder and M retrain when concept discovery fires.
 
     Extends StaticDDAdaptiveM with one extra step: after M's retrain, DD's
@@ -247,10 +290,10 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
 
     # Anchoring knobs for the DD retrain set, to prevent catastrophic forgetting of
     # known-class geometry
-    # Capping the buffer contribution and tiling the known exemplars restores a 
+    # Capping the buffer contribution and tiling the known exemplars restores a
     # roughly balanced per-class contribution to the loss
-    DD_RETRAIN_BUF_MAX     = 5_000
-    DD_RETRAIN_EX_REPEATS  = 2
+    DD_RETRAIN_BUF_MAX = 5_000
+    DD_RETRAIN_EX_REPEATS = 2
 
     def __init__(
         self,
@@ -273,11 +316,16 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
         y_cal_mc: np.ndarray | None = None,
     ):
         super().__init__(
-            detector=detector, base_learner=base_learner,
-            X_exemplars=X_exemplars, y_exemplars=y_exemplars,
+            detector=detector,
+            base_learner=base_learner,
+            X_exemplars=X_exemplars,
+            y_exemplars=y_exemplars,
             m_init_state=m_init_state,
-            X_eval=X_eval, y_eval_bin=y_eval_bin, novel_mask=novel_mask,
-            per_class_masks=per_class_masks, concept_batch=concept_batch,
+            X_eval=X_eval,
+            y_eval_bin=y_eval_bin,
+            novel_mask=novel_mask,
+            per_class_masks=per_class_masks,
+            concept_batch=concept_batch,
         )
         self.y_ex_mc = y_exemplars_mc
         self.X_dd_eval_pool = X_dd_eval_pool
@@ -286,8 +334,8 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
         self.dd_retrain_batch = dd_retrain_batch
         self.n_dd_retrains = 0
 
-        self.X_cal     = X_cal
-        self.y_cal_mc  = y_cal_mc
+        self.X_cal = X_cal
+        self.y_cal_mc = y_cal_mc
 
         self.novel_y_mc: np.ndarray | None = None
 
@@ -297,14 +345,19 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
         return float(is_drifted.float().mean())
 
     def process_batch(
-        self, batch_idx: int, day_b: np.ndarray,
-        X_b: np.ndarray, y_b: np.ndarray, concept_buf: ConceptBuffer,
+        self,
+        batch_idx: int,
+        day_b: np.ndarray,
+        X_b: np.ndarray,
+        y_b: np.ndarray,
+        concept_buf: ConceptBuffer,
         n_poisoned: int = 0,
     ) -> BatchResult:
         X_t = torch.from_numpy(X_b)
 
-        m = eval_base_learner(self.base_learner, self.X_eval, self.y_eval_bin,
-                              self.novel_mask, self.per_class_masks)
+        m = eval_base_learner(
+            self.base_learner, self.X_eval, self.y_eval_bin, self.novel_mask, self.per_class_masks
+        )
 
         _, is_drifted, _ = self.detector.detect(X_t)
         drift_frac = float(is_drifted.float().mean())
@@ -313,12 +366,14 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
         n_attack_in_buf = sum(int((y == 1).sum()) for y in concept_buf.y_buf)
         n_buf = concept_buf.size
         attack_frac = (n_attack_in_buf / n_buf) if n_buf > 0 else 0.0
-        allow_fire = (n_attack_in_buf >= self.MIN_ATTACK_FOR_FIRE
-                      and attack_frac >= self.MIN_ATTACK_FRAC_FOR_FIRE)
+        allow_fire = (
+            n_attack_in_buf >= self.MIN_ATTACK_FOR_FIRE
+            and attack_frac >= self.MIN_ATTACK_FRAC_FOR_FIRE
+        )
 
         concepts_found = 0
         for s in range(0, len(X_t), self.concept_batch):
-            sub = X_t[s:s + self.concept_batch]
+            sub = X_t[s : s + self.concept_batch]
             _, is_dr_sub, _ = self.detector.detect(sub)
             if is_dr_sub.any():
                 z_sub = self.detector.encode(sub[is_dr_sub])
@@ -331,10 +386,12 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
             y_buf = np.concatenate(concept_buf.y_buf)
             n_attack = int((y_buf == 1).sum())
             n_benign = int((y_buf == 0).sum())
-            print(f'  [FIRE {type(self).__name__}] '
-                  f'batch={batch_idx} day={int(round(float(day_b.mean())))} '
-                  f'buf={len(y_buf)} attack={n_attack} benign={n_benign} '
-                  f'concepts={concepts_found}')
+            print(
+                f"  [FIRE {type(self).__name__}] "
+                f"batch={batch_idx} day={int(round(float(day_b.mean())))} "
+                f"buf={len(y_buf)} attack={n_attack} benign={n_benign} "
+                f"concepts={concepts_found}"
+            )
             with torch.no_grad():
                 h_buf = self.detector.encode(torch.from_numpy(X_buf)).cpu()
             new_proto_idx = range(self.n_proto_at_last_retrain, self.detector.ncm.num_classes)
@@ -352,12 +409,21 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
                 new_ex_X = np.vstack(harvested_X)
                 new_ex_y_bin = np.concatenate(harvested_y_bin)
                 new_ex_y_mc = np.concatenate(harvested_y_mc)
-                self.novel_X = new_ex_X if self.novel_X is None else np.vstack([self.novel_X, new_ex_X])
-                self.novel_y = new_ex_y_bin if self.novel_y is None else np.concatenate([self.novel_y, new_ex_y_bin])
-                self.novel_y_mc = new_ex_y_mc if self.novel_y_mc is None else np.concatenate([self.novel_y_mc, new_ex_y_mc])
+                self.novel_X = (
+                    new_ex_X if self.novel_X is None else np.vstack([self.novel_X, new_ex_X])
+                )
+                self.novel_y = (
+                    new_ex_y_bin
+                    if self.novel_y is None
+                    else np.concatenate([self.novel_y, new_ex_y_bin])
+                )
+                self.novel_y_mc = (
+                    new_ex_y_mc
+                    if self.novel_y_mc is None
+                    else np.concatenate([self.novel_y_mc, new_ex_y_mc])
+                )
             n_new_protos = self.detector.ncm.num_classes - self.n_proto_at_last_retrain
             self.n_proto_at_last_retrain = self.detector.ncm.num_classes
-
 
             parts_X_bin = [X_buf, self.X_ex]
             parts_y_bin = [y_buf, self.y_ex]
@@ -372,7 +438,8 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
             latest_new_proto_idx = self.detector.ncm.num_classes - 1
             if len(X_buf) > self.DD_RETRAIN_BUF_MAX:
                 sub_idx = np.random.default_rng(self.n_dd_retrains).choice(
-                    len(X_buf), self.DD_RETRAIN_BUF_MAX, replace=False)
+                    len(X_buf), self.DD_RETRAIN_BUF_MAX, replace=False
+                )
                 X_buf_dd = X_buf[sub_idx]
             else:
                 X_buf_dd = X_buf
@@ -386,11 +453,17 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
                 parts_y_mc.append(self.novel_y_mc)
             X_ret_mc = np.vstack(parts_X_mc)
             y_ret_mc = np.concatenate(parts_y_mc)
-            print(f'  [DD retrain set] buf={len(X_buf_dd):,} (capped from {len(X_buf):,})  '
-                  f'ex={len(X_ex_tile):,} ({self.DD_RETRAIN_EX_REPEATS}x)  '
-                  f'novel={len(self.novel_X) if self.novel_X is not None else 0}')
-            dd_loader = GPULoader(X_ret_mc, y_ret_mc, self.dd_retrain_batch,
-                                  device=next(self.base_learner.parameters()).device)
+            print(
+                f"  [DD retrain set] buf={len(X_buf_dd):,} (capped from {len(X_buf):,})  "
+                f"ex={len(X_ex_tile):,} ({self.DD_RETRAIN_EX_REPEATS}x)  "
+                f"novel={len(self.novel_X) if self.novel_X is not None else 0}"
+            )
+            dd_loader = GPULoader(
+                X_ret_mc,
+                y_ret_mc,
+                self.dd_retrain_batch,
+                device=next(self.base_learner.parameters()).device,
+            )
             self.detector.retrain(
                 dd_loader,
                 epochs=self.dd_retrain_epochs,
@@ -402,20 +475,23 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
             T_old = self.detector.concept_threshold
             if self.X_cal is not None:
                 cal_src = self.X_cal
-                cal_label = 'X_cal'
+                cal_label = "X_cal"
             else:
                 cal_src = self.X_ex
-                cal_label = 'X_ex (fallback)'
+                cal_label = "X_ex (fallback)"
             T_raw = calibrate_concept_threshold(
-                self.detector, cal_src,
+                self.detector,
+                cal_src,
                 device=next(self.base_learner.parameters()).device,
             )
             T_floor = 2.0 * self.detector.drift_threshold
             if T_raw < T_floor:
                 self.detector.concept_threshold = T_floor
-            print(f'  [T recalibrated on {cal_label}] {T_old:.3f} -> '
-                  f'{self.detector.concept_threshold:.3f} (raw {T_raw:.3f}, '
-                  f'floor {T_floor:.3f})')
+            print(
+                f"  [T recalibrated on {cal_label}] {T_old:.3f} -> "
+                f"{self.detector.concept_threshold:.3f} (raw {T_raw:.3f}, "
+                f"floor {T_floor:.3f})"
+            )
 
             concept_buf.reset()
             self.retrain_count += 1
@@ -424,17 +500,21 @@ class AdaptiveDDAdaptiveM(StaticDDAdaptiveM):
         dd_drift_rate_pool = self._eval_dd_drift_rate()
         stream_m = eval_on_stream_batch(self.base_learner, X_b, y_b)
         extras_extra = {
-            'dd_drift_rate_pool': dd_drift_rate_pool,
-            'n_dd_retrains':      self.n_dd_retrains,
-            'n_prototypes':       int(self.detector.ncm.num_classes),
+            "dd_drift_rate_pool": dd_drift_rate_pool,
+            "n_dd_retrains": self.n_dd_retrains,
+            "n_prototypes": int(self.detector.ncm.num_classes),
             **stream_m,
         }
         return BatchResult.from_metrics(
-            batch_idx=batch_idx, day_idx=int(round(float(day_b.mean()))),
-            drift_frac=drift_frac, concepts_found=concepts_found,
-            retrain_fired=retrain_fired, n_poisoned=n_poisoned,
+            batch_idx=batch_idx,
+            day_idx=int(round(float(day_b.mean()))),
+            drift_frac=drift_frac,
+            concepts_found=concepts_found,
+            retrain_fired=retrain_fired,
+            n_poisoned=n_poisoned,
             buf_size=concept_buf.size,
-            metrics=m, extras_extra=extras_extra,
+            metrics=m,
+            extras_extra=extras_extra,
         )
 
 
@@ -449,6 +529,8 @@ def run_stream(
     schedule_fn: Callable[[int], float] | None = None,
     rng_seed: int = 1041,
     batch_size: int = 1000,
+    min_inject_day: int = 1,
+    inject_label: int = 0,
 ) -> list[BatchResult]:
     """
     Prequential streaming loop with optional adversarial injection.
@@ -458,19 +540,31 @@ def run_stream(
 
     When schedule_fn is provided, the per-batch poison fraction is
     schedule_fn(batch_idx)
+
+    min_inject_day gates injection to batches whose day index reaches it; the
+    default of 1 skips the all-benign Monday warm-up. Set to 0 to permit
+    injection from the very start of the stream (used by the manufactured-novelty
+    force-false experiment, which injects in a pre-drift window).
+
+    inject_label is the label attached to every injected (novel-class) flow.
+    The default 0 (BENIGN) is the label-flipping payload shared by the suppress
+    and oscillating force-false attacks. Set to 1 (ATTACK) to inject under the
+    true coarse label, which leaves the buffer's attack fraction high enough to
+    pass the concept-discovery gate.
     """
     from tqdm.auto import tqdm
 
     rng_atk = np.random.default_rng(rng_seed)
-    is_coupled = isinstance(system, StaticDDAdaptiveM)
+    is_coupled = isinstance(system, StaticDAdaptiveM)
     concept_buf = ConceptBuffer() if is_coupled else None
     results: list[BatchResult] = []
 
-    for b_start in tqdm(range(0, len(X_stream), batch_size),
-                        leave=False, desc=f'p={poison_frac:.0%}'):
-        X_b = X_stream[b_start:b_start + batch_size].copy()
-        y_b = y_stream_bin[b_start:b_start + batch_size].copy()
-        d_b = d_stream[b_start:b_start + batch_size]
+    for b_start in tqdm(
+        range(0, len(X_stream), batch_size), leave=False, desc=f"p={poison_frac:.0%}"
+    ):
+        X_b = X_stream[b_start : b_start + batch_size].copy()
+        y_b = y_stream_bin[b_start : b_start + batch_size].copy()
+        d_b = d_stream[b_start : b_start + batch_size]
         batch_idx = b_start // batch_size
 
         if schedule_fn is not None:
@@ -479,12 +573,12 @@ def run_stream(
             this_p = poison_frac
 
         n_poison = 0
-        if this_p > 0 and (d_b >= 1).any():
+        if this_p > 0 and (d_b >= min_inject_day).any():
             n_poison = int(len(X_b) * this_p)
             if n_poison > 0:
                 adv_idx = rng_atk.choice(len(novel_pool), n_poison, replace=True)
                 X_adv = novel_pool[adv_idx]
-                y_adv = np.zeros(n_poison, dtype=np.int64)
+                y_adv = np.full(n_poison, inject_label, dtype=np.int64)
                 X_b = np.vstack([X_b, X_adv])
                 y_b = np.concatenate([y_b, y_adv])
                 perm = rng_atk.permutation(len(X_b))
@@ -511,7 +605,7 @@ def fresh_system(
     per_class_masks: Mapping[str, np.ndarray] | None = None,
     input_dim: int,
     m_hidden: tuple = (256, 128, 64),
-    device: torch.device | str = 'cuda',
+    device: torch.device | str = "cuda",
     concept_batch: int = 256,
 ):
     """Factory for a fresh system instance reset to its initial state."""
@@ -519,14 +613,19 @@ def fresh_system(
     ml = BaseLearnerMLP(input_dim, m_hidden).to(device)
     ml.load_state_dict(copy.deepcopy(m_init_state))
 
-    if system_type == 'static':
-        return StaticDDStaticM(ml, X_eval, y_eval_bin, novel_mask, per_class_masks)
-    if system_type == 'static_dd_adaptive_m' or system_type == 'coupled':
-        return StaticDDAdaptiveM(
-            detector=det, base_learner=ml,
-            X_exemplars=X_exemplars, y_exemplars=y_exemplars,
+    if system_type == "static":
+        return StaticDStaticM(ml, X_eval, y_eval_bin, novel_mask, per_class_masks)
+    if system_type == "static_dd_adaptive_m" or system_type == "coupled":
+        return StaticDAdaptiveM(
+            detector=det,
+            base_learner=ml,
+            X_exemplars=X_exemplars,
+            y_exemplars=y_exemplars,
             m_init_state=m_init_state,
-            X_eval=X_eval, y_eval_bin=y_eval_bin, novel_mask=novel_mask,
-            per_class_masks=per_class_masks, concept_batch=concept_batch,
+            X_eval=X_eval,
+            y_eval_bin=y_eval_bin,
+            novel_mask=novel_mask,
+            per_class_masks=per_class_masks,
+            concept_batch=concept_batch,
         )
-    raise ValueError(f'Unknown system_type: {system_type!r}')
+    raise ValueError(f"Unknown system_type: {system_type!r}")

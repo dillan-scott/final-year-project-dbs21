@@ -45,14 +45,17 @@ def save_latex(
 ) -> None:
     """Export a DataFrame as a LaTeX table with consistent formatting"""
     os.makedirs(table_dir, exist_ok=True)
-    df.to_latex(
-        os.path.join(table_dir, filename),
+    latex = df.to_latex(
         float_format=float_fmt,
         escape=False,
         caption=caption,
         label=label,
         na_rep='\\textendash',
     )
+    # LaTeX-safe: escape literal percents and the unicode +/- from agg()
+    latex = latex.replace('%', r'\%').replace('±', r'$\pm$').replace('_', r'\_')
+    with open(os.path.join(table_dir, filename), 'w', encoding='utf-8') as f:
+        f.write(latex)
 
 
 def agg(values: Sequence[float]) -> str:

@@ -12,7 +12,7 @@ In response to this threat, recent research has proposed adversarially robust dr
 
 However, both works share a fundamental limitation when viewed from the perspective of a fully coupled adaptive learning pipeline. Kuppa and Le-Khac~\cite{Kuppa_2022} evaluate their detector in isolation: their experiments measure the detector's ability to correctly classify incoming samples as drifted or not, reporting precision, recall and F1 against held-out drifted classes. No downstream base learner is used, meaning their robustness claims speak only to the detector's own classification performance and say nothing about whether those properties extend to protecting a separate model that depends on the detector to govern its adaptation. Korycki and Krawczyk~\cite{Korycki_2022} do include a base learner, but they choose a model that updates continuously, instance by instance, regardless of drift signals, meaning the detector is advisory rather than controlling.
 
-This discrepancy is significant: the coupling between detector and base learner is itself an attack surface that no detector-only evaluation can characterise, and the architectural details of that coupling (when a downstream classifier retrains relative to detector signals) materially determine which attacks succeed.
+The coupling between detector and base learner is itself an attack surface that no detector-only evaluation can characterise, and the architectural details of that coupling (when a downstream classifier retrains relative to detector signals) materially determine which attacks succeed.
 
 \section{Scope}
 \label{sec:scope}

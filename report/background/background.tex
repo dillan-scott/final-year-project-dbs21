@@ -1,7 +1,7 @@
 \chapter{Background}
 \label{ch:background}
 
-This chapter establishes the theoretical foundations and reviews the relevant literature in order to contextualise the later contents of this thesis. It begins by formally defining concept drift and outlining its taxonomy based on probabilistic decomposition and temporal characteristics. Subsequently, the general architecture of drift detection systems is analysed, alongside a review of some existing concept drift detectors and their inherent limitations. The chapter then moves on to consider a security perspective, introducing the notion of adversarial concept drift, where distributional shifts are manipulated by potentially malicious actors. Before turning to defences, it introduces the foundations of class-incremental learning and exemplar-based memory, which underpin how adaptive learners update without forgetting. Finally, the chapter concludes by discussing the already existing robust solutions, which have been proposed to mitigate these challenges.
+This chapter establishes the theoretical foundations and reviews the relevant literature to contextualise the later contents of this thesis. It begins by formally defining concept drift and outlining its taxonomy based on probabilistic decomposition and temporal characteristics. Subsequently, the general architecture of drift detection systems is analysed, alongside a review of some existing concept drift detectors and their inherent limitations. The chapter then moves on to consider a security perspective, introducing the notion of adversarial concept drift, where distributional shifts are manipulated by potentially malicious actors. Before turning to defences, it introduces the foundations of class-incremental learning and exemplar-based memory, which underpin how adaptive learners update without forgetting. Finally, the chapter concludes by discussing the already existing robust solutions, which have been proposed to mitigate these challenges.
 
 \section{Concept Drift}
 Concept drift generally refers to changes in the statistical relationship between input features and target labels, characterised as a change in the true joint distribution $p(X, y)$~\cite{Gao_2007}. Formally, concept drift between time points $t_0$ and $t_1$ is said to occur when
@@ -63,7 +63,7 @@ Although they are algorithmically diverse, most concept drift detection systems 
     \item \textit{Decision and Response}: Upon detecting significant deviation, the detector emits a signal (sometimes distinguishing between a warning and confirmed drift) which triggers downstream actions such as retraining, window resetting, or model replacement.
 \end{enumerate}
 
-This modular structure highlights an important property of drift detectors: they act as \emph{control mechanisms} governing when and how adaptive learning occurs. As such, their behaviour has long-term consequences for system performance, stability, and robustness.
+This modular structure highlights an important property of drift detectors: they act as \textit{control mechanisms} governing when and how adaptive learning occurs. As such, their behaviour has long-term consequences for system performance, stability, and robustness.
 \missingfigure{Maybe a wireframe of drift detection architecture}
 
 \subsection{Drift Detection Algorithms}
@@ -111,7 +111,7 @@ In contrast, these methods monitor the statistical properties of the input featu
 \subsection{Limitations and Weaknesses}
 While the drift detectors described above do provide robust mechanisms for adaptation, they are subject to inherent limitations and trade-offs between sensitivity (minimising false negatives) and specificity (minimising false positives). Rather than arising from flawed algorithms, many of these weaknesses are due to the statistical assumptions made by classical drift detection; most notably, finite-sample estimation, approximate stationarity within windows, and the use of fixed confidence bounds to identify change.
 
-Importantly, these limitations can be mapped onto the general architecture of drift detectors introduced earlier in~\cref{sec:drift detection architecture}. Choices made at the level of the \textit{observation source} (e.g. error rates or feature statistics), the \textit{summary mechanism} (e.g. windowing or cumulative statistics), and the \textit{change test} (e.g. hypothesis tests or thresholds) impose constraints on what types of drift can be reliably identified and how quickly.
+These limitations can be mapped onto the general architecture of drift detectors introduced earlier in~\cref{sec:drift detection architecture}. Choices made at the level of the \textit{observation source} (e.g. error rates or feature statistics), the \textit{summary mechanism} (e.g. windowing or cumulative statistics), and the \textit{change test} (e.g. hypothesis tests or thresholds) impose constraints on what types of drift can be reliably identified and how quickly.
 
 \subsubsection{Sensitivity to Gradual Drift}
 A limitation of some error-based detectors, such as DDM, is the reduced ability to distinguish between stationary noise and gradual concept drift. In the presence of abrupt drift, the error rate typically exhibits a sharp increase, triggering the detector's thresholds (defined for DDM in~\cref{eq:DDM warning} and~\cref{eq:DDM confirmation}). However, during a gradual drift, the error rate may increase too slowly to violate the statistical bounds.
@@ -198,7 +198,7 @@ This property is particularly valuable for nearest-mean classifiers operating un
 
 \section{Adversarially Robust Solutions}
 \label{sec:robust solutions}
-To address the vulnerabilities of traditional detectors, recent research proposes methods explicitly designed to withstand adversarial manipulation. These solutions leverage techniques like contrastive embedding and generative modelling to differentiate between natural and adversarial distributional shifts.
+To address the vulnerabilities of traditional detectors, recent research proposes methods explicitly designed to withstand adversarial manipulation. These solutions employ techniques like contrastive embedding and generative modelling to differentiate between natural and adversarial distributional shifts.
 
 \subsection{Robust Restricted Boltzmann Machine for Drift Detection}
 \label{sec:rrbm-dd}
@@ -206,7 +206,7 @@ Korycki and Krawczyk~\cite{Korycki_2022} introduce the Robust Restricted Boltzma
 
 To counter instance-based poisoning, the model is trained with a robust gradient descent procedure using M-estimators that softly truncate the influence of samples whose loss exceeds a learned tolerance. To counter concept-based poisoning, the model's energy function is augmented with a gating mechanism over the hidden layer and a Gaussian noise model over the visible layer. The gating allows individual hidden units to be deactivated when their contribution is dominated by an adversarial cluster, and the noise model damps reconstruction-error spikes caused by adversarial perturbations.
 
-Crucially, Korycki and Krawczyk evaluate the RRBM-DD as part of a coupled adaptive system where the downstream base learner is updated continuously. They employ an adaptive Hoeffding tree that incrementally revises its splits with each new labelled sample, independently of any drift signal. In this configuration, the detector's role is advisory: it can declare that drift has occurred, causing a full retraining, but the model still adapts continuously and so does not depend entirely on the detector to trigger updates. This contrasts with the setting examined in this thesis, in which a static base learner updates only when explicitly triggered by the detector and therefore inherits both the detector's robustness properties and its decision latency. The implications of this difference for adversarial robustness are taken up in~\cref{ch:target_system_threat_model}.
+Korycki and Krawczyk evaluate the RRBM-DD as part of a coupled adaptive system where the downstream base learner is updated continuously. They employ an adaptive Hoeffding tree that incrementally revises its splits with each new labelled sample, independently of any drift signal. In this configuration, the detector's role is advisory: it can declare that drift has occurred, causing a full retraining, but the model still adapts continuously and so does not depend entirely on the detector to trigger updates. This contrasts with the setting examined in this thesis, in which a static base learner updates only when explicitly triggered by the detector and therefore inherits both the detector's robustness properties and its decision latency. The implications of this difference for adversarial robustness are taken up in~\cref{ch:target_system_threat_model}.
 
 \subsection{The Contrastive NCM Detector}
 \label{sec:contrastive_ncm}

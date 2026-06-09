@@ -1,3 +1,93 @@
 \chapter{Implementation}
 \label{ch:implementation}
 
+This chapter describes how the target system of \cref{ch:target_system_threat_model}, our evaluation pipeline and our attacks are realised in code. Because Kuppa and Le-Khac~\cite{Kuppa_2022} release neither code nor a precise specification of several components, we first reimplement their Contrastive NCM detector and confirm that the reimplementation reproduces their reported behaviour. We then build the coupled adaptive system in which the detector supervises a downstream base learner, and describe the design decisions that this required. Four of these decisions complete components that the paper leaves under-specified and each was surfaced by a concrete failure of a naive implementation rather than chosen a priori. We frame them as filling gaps in the paper's intended architecture, not as corrections to it. The chapter closes with the implementation of the attacks selected for evaluation in \cref{ch:attack_taxonomy_objectives}.
+
+\section{Datasets and Preprocessing}
+\label{sec:impl-data}
+We evaluate on CICIDS2017, a widely used intrusion-detection benchmark of labelled bidirectional network flows captured over five working days~\cite{Sharafaldin_2018}. We use the Engelen-corrected release of CICIDS2017~\cite{Engelen_2021}, which repairs documented errors in the original dataset's labelling and feature-extraction pipeline. Kuppa and Le-Khac~\cite{Kuppa_2022} report using this same correction, although their testbed description matches the larger CSE-CIC-IDS2018 dataset\footnote{A corrected CSE-CIC-IDS2018 also exists~\cite{Liu_2022}, but post-dates~\cite{Kuppa_2022} and is not the correction they cite.}. Therefore we read their evaluation as using the same corrected CICIDS2017. However, the comparison in \cref{sec:impl-repro-results} is still indicative rather than exact because the reference implementation, the test-set composition, and the feature subset all remain unspecified.
+
+The five daily captures are concatenated in their natural order. We discard flow-identifier columns (the flow identifier, source and destination addresses and ports, and the timestamp) so that the detector cannot key on artefacts of the capture rather than on actual traffic behaviour. We also consolidate the fine-grained attack labels into their parent families (for example, the several denial-of-service variants into a single \texttt{DoS} class). Non-finite feature values are replaced, all-empty columns are dropped, the remaining gaps are mean-imputed, and the features are standardised. We are left with a $77$-dimensional input space over seven traffic classes. Kuppa and Le-Khac~\cite{Kuppa_2022} report a $72$-dimensional feature set but do not specify which columns they retain, so we could not match their exact feature space; this is a concrete instance of the unpublished preprocessing noted above.
+
+To simulate concept drift we withhold a subset of classes as \textit{novel}: these never appear in the initial training data and first arrive partway through the stream, while the remaining \textit{known} classes train the initial detector and base learner. Our main experiments withhold \texttt{DoS} and \texttt{PortScan}; a robustness variant withholds \texttt{DoS} and \texttt{DDoS} (\cref{ch:evaluation}). The stream preserves the natural Monday-to-Friday ordering rather than being shuffled, so novel traffic arrives at its true point in time mirroring a real-world scenario.
+
+\section{Reimplementing and Reproducing the Contrastive NCM Detector}
+\label{sec:impl-reproduction}
+
+\subsection{Reimplementation}
+\label{sec:impl-reimpl}
+Because no reference implementation is published, we reimplement the detector of \cref{sec:contrastive_ncm} in PyTorch directly from the paper's specification~\cite{Kuppa_2022}. The embedding network is an autoencoder trained jointly on a mean-squared reconstruction loss and the supervised contrastive loss, with temperature $\tau = 0.1$; it maps the $77$-dimensional input to a $32$-dimensional latent space through a single $64$-unit hidden layer. On these embeddings we fit the Nearest Class Mean classifier with the hybrid distance of \cref{eq:hybrid-distance} ($\lambda_1 = 0.1$), taking each class prototype to be the mean latent vector of its training samples. Concept discovery accumulates the telescoping displacement of successive drifted-batch means as in \cref{eq:concept-threshold}. Following the paper we train the encoder network with the Adam optimiser at a learning rate of $10^{-4}$ for $300$ epochs, on its $25/75$ train--test split.
+
+Three components are deliberately left open at this stage because the paper does not specify them: the calibration of the two thresholds (\cref{sec:impl-calibration}), the policy for retaining past concepts (\cref{sec:impl-retrain}), and the exact coupling to a downstream classifier (\cref{sec:impl-coupled}). We fix the reimplementation against the paper before introducing any of them.
+
+\subsection{Reproduction}
+\label{sec:impl-repro-results}
+We validate the reimplementation on the paper's drift-detection protocol: a subset of classes is withheld from training, their test-set samples form the drifted (positive) class and the other classes the negatives. Matching the paper's ``two classes dropped'', chosen at random over five runs, we compare precision, recall and $F_1$ directly against its reported values (\cref{tab:impl-reproduction}). The plain-autoencoder baseline reproduces almost exactly ($F_1 = 0.763$ against $0.777$) and the contrastive detector lands lower ($0.882$ against $0.942$); a threshold-free check agrees, our AUROC of $82.8$ tracks the same shortfall against the paper's $89.8$. The gap is most plausibly caused by the details the paper leaves unspecified (discussed in \cref{sec:impl-data}), not by the detector itself. The reproduction preserves the paper's ordering, the proposed method ahead of the autoencoder baseline.
+
+\input{./implementation/reproduction_detection_table.tex}
+
+The figure above establishes that the reimplementation detects drift as the paper's detector does; they say nothing about its \emph{adversarial robustness}, which is the property for which the contrastive detector was originally proposed. We therefore also run the paper's instance-based poisoning experiment, where a growing fraction of adversarially perturbed novel samples is injected into training, and the contrastive detector's accuracy degrades gracefully with the injection ratio, reproducing the trend the paper reports. We stress that this is only a qualitative check. The paper's headline claim is comparative -- that the Contrastive NCM detector is more robust than its baselines -- and we do not cleanly reproduce that, because the plain-autoencoder baseline sits at the balanced-accuracy floor throughout. We also do not reproduce the paper's concept-based poisoning experiment as it is built on the MAA algorithm~\cite{Kuppa_2019}, a separate black-box manifold-approximation attack whose faithful reimplementation is out of scope.
+
+\section{The Coupled Adaptive System}
+\label{sec:impl-coupled}
+
+\subsection{Architecture and Streaming Harness}
+\label{sec:impl-harness}
+The coupled system realises the architecture of \cref{ch:target_system_threat_model}: the detector $\mathcal{D}$ and base learner $\mathcal{M}$ consume the same stream in parallel. $\mathcal{M}$ classifies each batch while $\mathcal{D}$ monitors it for drift, flagging individual samples (\cref{eq:drift-rule}) and accumulating them in the concept-discovery buffer. When the firing predicate is satisfied (\cref{sec:impl-gate}) the coupling layer assembles a retraining set (\cref{sec:impl-retrain}) and rebuilds the encoder, the class prototypes, and $\mathcal{M}$. A streaming harness drives this loop one batch at a time and records, per batch, the base learner's $F_1$ and per-class false-negative rates, the number of detector and base-learner retraining events, the detector's drift rate on a fixed novel pool, and every firing decision. The harness also exposes the injection hook through which the adversary introduces crafted traffic (\cref{sec:impl-attacks}).
+
+\subsection{Three System Configurations}
+\label{sec:impl-configs}
+We use three configurations of the coupling, which together form an ablation ladder used throughout \cref{ch:evaluation}:
+\begin{itemize}
+    \item \textsc{StaticDStaticM}: neither component adapts. $\mathcal{M}$ remains at its initial state and never sees the novel classes. This is the no-adaptation lower bound.
+    \item \textsc{StaticDAdaptiveM}: the detector is frozen but $\mathcal{M}$ adapts on each firing event, isolating the composition channel from any drift in the representation itself.
+    \item \textsc{AdaptiveDAdaptiveM}: both components adapt on each event. This is the paper-faithful system and the default victim.
+\end{itemize}
+Fixing which part of the coupling is allowed to adapt lets us attribute observed effects to a specific mechanism rather than to the system as a whole.
+
+\section{Completing the Under-Specified Components}
+\label{sec:impl-refinements}
+Deploying the detector in a coupled setting forced four design decisions that the paper leaves open. We present each as the naive choice, the concrete failure it produced in our implementation, and the refinement that resolves it. We stress that these complete the paper's intended architecture rather than correct an error in it.
+
+\subsection{The Count-and-Fraction Firing Gate}
+\label{sec:impl-gate}
+The paper triggers concept discovery based on displacement alone; that is, a new concept is registered once the accumulated displacement crosses $T$. Coupled to a retraining loop, this proved far too eager. In an unattacked run, the system's first concept-discovery event fired on a buffer holding only three attack-labelled drifted samples, rebuilding $\mathcal{M}$ on what could effectively be noise. In other words, a handful of borderline samples can satisfy it long before genuine drift is present.
+
+We therefore gate firing on the \textit{makeup} of the buffer in addition to its displacement. A retraining event fires only when the buffer holds at least a minimum count of attack-labelled drifted samples (we use $500$) and those samples constitute at least a minimum fraction of the buffer (we use $0.3$). These two floors are the count and fraction sub-surfaces of the trigger channel named in \cref{sec:adaptation_cycle}; the trigger-channel attacks of \cref{ch:evaluation} act on them, and \cref{sec:eval-rq3-gate} decomposes their distinct roles.
+
+\subsection{Threshold Calibration}
+\label{sec:impl-calibration}
+The paper sets the concept threshold $T = 3.5$ a priori, but this value is tied to the scale of its embeddings and does not transfer to ours. We calibrate both thresholds on a held-out sample of known-class data. The drift threshold $T_{drift}$ is set to the $0.90$ quantile of known-class drift scores, fixing the known-class false-positive rate at roughly $10\%$ and giving $T_{drift} = 1.34$. The concept threshold is set by a calibration routine that measures the accumulated drifted-batch displacement (\cref{eq:concept-threshold}) over many seeded random sub-batches of known-class data and takes the $0.995$ quantile of the resulting norms, giving $T = 37.84$. The values above are those of the main victim (with novel classes \texttt{DoS} and \texttt{PortScan} withheld); independently-trained detectors calibrate comparable but distinct thresholds under the same rule (the $T_{drift}$ values of the \cref{ch:evaluation} variants span $1.19$--$1.34$). Within a run, $T_{drift}$ is held fixed, while $T$ is recalibrated on the new encoder at each retraining event.
+
+\subsection{Retrain-Set Composition and Encoder Stability}
+\label{sec:impl-retrain}
+When a retraining event fires the encoder must be rebuilt, and the paper does not specify on what data. The naive choice is retraining on the drifted buffer alone; this destabilises the representation. The encoder specifically reorganises its latent space around the newly discovered concept and known-class performance collapses. This is equivalent to catastrophic forgetting~\cite{French_1999}, where learning a new task erases earlier ones.
+
+Following the rehearsal principle that mitigates forgetting~\cite{Robins_1995}, the coupling layer composes the retraining set from the drifted buffer together with a fixed-size set of per-class exemplars selected via herding (\cref{eq:herding})~\cite{Rebuffi_2017}. We adopt an \textit{accumulate, never evict} policy, meaning once a concept is registered, its exemplars are retained for every subsequent rebuild. This realises the composition channel concretely, and it has a direct consequence for adversarial persistence (\cref{ch:attack_taxonomy_objectives}). The same rehearsal that protects a genuine concept against forgetting protects an adversarial one just as faithfully, preventing the system from ``healing'' on its own once a payload has been registered.
+
+\subsection{Stream-Side Evaluation}
+\label{sec:impl-eval}
+Finally, the coupling forces a choice of evaluation surface, and two recur throughout the thesis. Testing $\mathcal{M}$ on a fixed, class-balanced \textit{benchmark} set, aware of the novel classes (\textit{bench} $F_1$), captures its standing accuracy, but this is not what a deployed system experiences. We therefore also evaluate $\mathcal{M}$ on the day's actual stream traffic (\textit{stream} $F_1$), batch by batch, and report end-of-stream (Friday) figures. Throughout, we report per-class false-negative rates alongside aggregate $F_1$, because, as the attacks of \cref{ch:evaluation} show, aggregate $F_1$ can remain almost unchanged while the false-negative rate on a single attack class rises sharply.
+
+With these four refinements in place, the coupled system adapts correctly under genuine drift: on an unattacked run it discovers the novel classes, retrains three times over the week, and reaches a Friday bench $F_1$ of $0.700$, against a no-adaptation floor of $0.207$. This working configuration is the baseline against which \cref{ch:evaluation} measures every attack.
+
+\section{Attack Implementation}
+\label{sec:impl-attacks}
+\todo[color=blue]{Describe the implementation of each attack.}
+We close with the implementation of the attacks selected for evaluation in \cref{ch:attack_taxonomy_objectives}. The results are reported in \cref{ch:evaluation}.
+
+% \subsection{The Injection Model}
+% \label{sec:impl-injection}
+% The adversary acts by injecting crafted flows into the stream. We model this as a per-batch \textit{injection} rather than replacement: at injection fraction $p$ the attacker adds $\lfloor\, p\,n_t \,\rfloor$ samples to a batch of $n_t$ genuine samples, so the crafted flows make up a fraction $p/(1+p)$ of the batch (\cref{def:injection_budget}). The injection rate may vary over the stream through a schedule function -- supporting sustained, oscillating, and ``poison-then-clean'' attack patterns -- and the attacker can choose the label under which the injected flows are presented.
+
+% \subsection{Composition and Label-Flipping Attacks}
+% \label{sec:impl-labelflip}
+% The simplest attacks manipulate what enters the concept-discovery buffer and under what label. Injecting novel-class flows under a \textit{benign} label holds the buffer's makeup below the firing gate, suppressing firing even as genuine drift accumulates; injecting them under their \textit{true} label instead drives the attack-labelled fraction past the gate to force an early, attacker-timed retraining event. The same two manipulations thus exercise the trigger channel's firing gate and, when a rebuild does occur, the composition channel's retraining set.
+
+% \subsection{Feature-Space (PGD) Attacks}
+% \label{sec:impl-pgd}
+% The remaining attacks perturb features directly, against the detector's differentiable drift score --- the minimum hybrid NCM distance of an embedding to the known prototypes, which is differentiable in the input. All three are projected gradient descent under an $L_\infty$ budget $\epsilon$ (swept in \cref{ch:evaluation}): $50$ steps at step size $\alpha = 2.5\,\epsilon/50$, projecting onto the $\epsilon$-ball each step and then clipping to the per-feature observed range so that the crafted flows stay within plausible feature values.
+
+% The three variants target different statistics. The first maximises each sample's individual drift score, pushing known-class flows past $T_{drift}$ so that they are flagged as drifted; this saturates per-sample detection but scatters the embeddings, leaving their mean almost unmoved. The second pushes every embedding coherently along a single fixed latent direction --- a deliberately naive attempt at the displacement the concept-discovery accumulator integrates, retained as a foil. The third is the aimed attack: it optimises two pools of flows so that their encoded batch means are driven maximally apart ($\max \lVert \mu_A - \mu_B \rVert$ in latent space), which is the lever that forces a firing event.
+
+% Each attack is run white-box, perturbing against the victim detector itself, and grey-box, perturbing against a surrogate detector and transferring the crafted flows to the victim. The surrogate shares the victim's architecture, hyperparameters and withheld classes and is drawn from the same training pool, differing only by an independent random seed --- a different train/calibration partition and weight initialisation. It thus models an adversary who knows the system design and the data distribution and trains their own detector; because its training data overlaps the victim's, the measured transfer is likely more favourable than a fully data-disjoint surrogate would achieve, which we leave to future work.

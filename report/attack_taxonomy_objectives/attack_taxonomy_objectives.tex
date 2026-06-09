@@ -82,8 +82,8 @@ The attack as we evaluate it is dirty-label: it depends on presenting attack tra
 
 \subsection{Backdooring \texorpdfstring{$\mathcal{M}$}{M}}
 \label{sec:axt-backdoor-m}
-A targeted variant of poisoning injects a feature trigger paired with a target label, so that the rebuilt $\mathcal{M}$ behaves normally on clean inputs but as the adversary specifies on any inputs carrying the trigger. We do not evaluate backdoor attacks in this thesis; we record them here for completeness and return to them as future work (\cref{ch:conclusion}).
-% EXP: none -- backdoor attacks not evaluated (future work).
+A targeted variant of poisoning injects a feature trigger paired with a target label, so that the rebuilt $\mathcal{M}$ behaves normally on clean inputs but as the adversary specifies on any inputs carrying the trigger. We evaluate this type of attack against $\mathcal{M}$ in~\cref{sec:eval-rq2}..
+% EXP: Backdoor M evaluated -> rq2_backdoor.ipynb; tab:rq2-backdoor (succeeds).
 
 \subsection{Poisoning and Backdooring \texorpdfstring{$\mathcal{D}$}{D}}
 \label{sec:axt-poison-d}
@@ -130,6 +130,8 @@ The taxonomy above spans the full coupling-layer attack space. This thesis evalu
 %   Manufactured novelty -> rq3_streaming.ipynb; tab:rq3-force-false-prewindow
 %   PGD false positive   -> rq3_pgd.ipynb; tab:rq3-pgd-false-positive / -end-to-end / -accumulator / -meanshift / -meanshift-greybox
 %   Poison M (+Evade D)  -> rq2_poisoning.ipynb; tab:attack-fri-summary, tab:ablation-encoder, tab:ablation-exemplars
+%                           (durable variant -> rq2_durable_poison.ipynb; tab:rq2-durable-poison -- resisted)
+%   Backdoor M           -> rq2_backdoor.ipynb; tab:rq2-backdoor (succeeds: triggered-DoS evades, durable via exemplar memory)
 %   (paper's instance-poisoning baseline = DETECTOR-LEVEL reproduction in Ch5, reproduction.ipynb -- not these coupling attacks.
 %    Concept-poisoning baseline DROPPED: requires MAA, out of scope -- see Ch5 sec:impl-reproduction.)
 \begin{tabular}{@{}lll@{}}
@@ -140,9 +142,10 @@ Suppression                       & Trigger (fraction floor)              & \cre
 Manufactured novelty              & Trigger (count/fraction floors)       & \cref{ch:evaluation}, RQ3 \\
 PGD false positive on $\mathcal{D}$ & Trigger (displacement, via features) & \cref{ch:evaluation}, RQ3 \\
 Poison $\mathcal{M}$ (riding genuine drift) & Composition                   & \cref{ch:evaluation}, RQ2 \\
+Backdoor $\mathcal{M}$ (feature trigger)   & Composition                   & \cref{ch:evaluation}, RQ2 \\
 \midrule
 Poison $\mathcal{D}$ (durable suppression) & Composition                   & Future work \\
-Backdoor $\mathcal{M}$ / $\mathcal{D}$ & Composition                       & Future work \\
+Backdoor $\mathcal{D}$ (feature trigger)   & Composition                   & Future work \\
 Inference-time evasion of $\mathcal{M}$ & Outside the coupling             & Future work \\
 \bottomrule
 \end{tabular}

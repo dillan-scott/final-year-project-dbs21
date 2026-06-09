@@ -44,9 +44,6 @@ The trigger channel decides \textit{when} the system rebuilds. An adversary targ
 \label{sec:axt-force}
 Here the adversary forces the firing predicate to evaluate to true while the underlying distribution is stable. A forced event can be harmful for two reasons. First, retraining is expensive, so a sustained stream of forced retraining events is a denial-of-service vector. Second, and more consequentially, because the adversary chooses the moment of retraining, they can take control of the composition channel concurrently, to supply adversarial data which the forced rebuild trains on (the compound attack of \cref{sec:axt-compound}). A false positive can be induced through any of the firing sub-surfaces:
 \begin{itemize}
-    \item \textit{Displacement, via oscillation}: alternating high-rate and zero-rate injection maximises the batch-to-batch variance of the buffer, which, through the recursive accumulator of \cref{eq:concept-accumulator}, could in principle push $\| \Delta \|$ past $T$ without any genuine new class being introduced. We evaluate this in \cref{ch:evaluation}.
-    % EXP: oscillation force-false -> rq3_streaming.ipynb (force-false mode); tab:rq3-attack-comparison.
-    %      Current run: NOT clearly robust -- force-false adds retrains at p>=20%% (4 vs 3 baseline); reframe before citing.
     \item \textit{Displacement, via feature perturbation}: an adversary with the feature-manipulation capability of \cref{sec:attacker_capabilities} can perturb known-class flows so that their embeddings cross the drift threshold $T_{drift}$ (\cref{eq:drift-rule}), effectively manufacturing drifted samples from an unchanged distribution. However, forcing an actual concept-discovery event additionally requires displacing the drifted-batch mean past $T$. This means the perturbed samples must appear somewhat coherent rather than just individually drifted. We realise this attack and assess its feasibility in \cref{ch:evaluation}.
     % EXP: PGD false positive -> rq3_pgd.ipynb. tab:rq3-pgd-false-positive (per-sample detection: white-box flag->0.999 @eps0.5; grey-box transfer <=0.53);
     %      tab:rq3-pgd-end-to-end (crossing T_drift alone does NOT force a fire); tab:rq3-pgd-accumulator (random-direction coherent displacement fails: 37.0 < T 37.8).
@@ -74,7 +71,7 @@ Here the adversary prevents the predicate from firing when genuine drift occurs,
 \label{sec:axt-composition}
 The composition channel decides \textit{what} data the models are rebuilt on. Because the rebuild trains both the encoder ($\mathcal{D}$) and $\mathcal{M}$ on that data, a composition attack can corrupt either component, or both at once. Attacks here can only occur in conjunction with a retraining event, whether genuine or forced, because the buffer is consumed only when the trigger fires. This is precisely why the two channels are so often combined (\cref{sec:axt-compound}).
 
-\subsection{Poisoning $\mathcal{M}$}
+\subsection{Poisoning \texorpdfstring{$\mathcal{M}$}{M}}
 \label{sec:axt-poison-m}
 When a retraining event fires, $\mathcal{M}$ is rebuilt on the concept-discovery buffer together with the retained exemplars. An adversary who has placed mislabelled flows (genuine \textsc{Attack} flows presented as \textsc{Benign}) in the buffer forces $\mathcal{M}$ to learn their features as \textsc{Benign}, raising its false-negative rate after the rebuild. Because the encoder retrains on the same buffer, this payload can simultaneously degrade $\mathcal{D}$, a representation-level effect we examine alongside $\mathcal{M}$'s degradation in \cref{ch:evaluation}.
 
@@ -83,12 +80,12 @@ The attack as we evaluate it is dirty-label: it depends on presenting attack tra
 % EXP: clean-label / feature-perturbation poisoning of M -> not evaluated (future work); dirty-label version is the RQ2 attack.
 % EXP: representation-level (encoder/prototype) effect -> tab:ablation-encoder; exemplar-memory effect -> tab:ablation-exemplars.
 
-\subsection{Backdooring $\mathcal{M}$}
+\subsection{Backdooring \texorpdfstring{$\mathcal{M}$}{M}}
 \label{sec:axt-backdoor-m}
 A targeted variant of poisoning injects a feature trigger paired with a target label, so that the rebuilt $\mathcal{M}$ behaves normally on clean inputs but as the adversary specifies on any inputs carrying the trigger. We do not evaluate backdoor attacks in this thesis; we record them here for completeness and return to them as future work (\cref{ch:conclusion}).
 % EXP: none -- backdoor attacks not evaluated (future work).
 
-\subsection{Poisoning and Backdooring $\mathcal{D}$}
+\subsection{Poisoning and Backdooring \texorpdfstring{$\mathcal{D}$}{D}}
 \label{sec:axt-poison-d}
 The same poisoned buffer that impacts $\mathcal{M}$ also retrains the encoder and prototypes, so the composition channel can be used to attack the detector itself. Where a poisoned $\mathcal{M}$ misclassifies, a poisoned $\mathcal{D}$ corrupts the firing decision. If tuned correctly, $\mathcal{D}$ ceases to flag a chosen drift, giving a durable form of the suppression of \cref{sec:axt-suppress}. A backdoored $\mathcal{D}$ contains a feature trigger that toggles the firing decision, letting the adversary flag or hide drift at will. Whether the effects of either persist for free is governed by \cref{sec:axt-maintenance}. We evaluate neither, and record them as future work (\cref{ch:conclusion}).
 % EXP: none -- detector poisoning/backdoor not evaluated (future work); durable-suppression dual of poison-M.
@@ -140,7 +137,6 @@ The taxonomy above spans the full coupling-layer attack space. This thesis evalu
 Attack & Channel (sub-surface) & Evaluated in \\
 \midrule
 Suppression                       & Trigger (fraction floor)              & \cref{ch:evaluation}, RQ2--RQ3 \\
-Force-false (oscillation)         & Trigger (displacement)                & \cref{ch:evaluation}, RQ3 \\
 Manufactured novelty              & Trigger (count/fraction floors)       & \cref{ch:evaluation}, RQ3 \\
 PGD false positive on $\mathcal{D}$ & Trigger (displacement, via features) & \cref{ch:evaluation}, RQ3 \\
 Poison $\mathcal{M}$ (riding genuine drift) & Composition                   & \cref{ch:evaluation}, RQ2 \\

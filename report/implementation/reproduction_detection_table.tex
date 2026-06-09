@@ -1,0 +1,16 @@
+\begin{table}[h]
+\centering
+\caption{Reproduction of the held-out-class drift-detection benchmark at the paper's ``two classes dropped'' setting: our precision, recall and $F_1$ against the values reported by Kuppa and Le-Khac~\cite{Kuppa_2022} (ours averaged over five random two-class withholdings). The plain-autoencoder baseline reproduces almost exactly on $F_1$; the contrastive detector lands modestly lower, and both of our detectors trade precision for recall relative to the paper.}
+\label{tab:impl-reproduction}
+\begin{tabular}{llccc}
+\toprule
+Method & Source & Precision & Recall & $F_1$ \\
+\midrule
+\multirow{2}{*}{Contrastive NCM (proposed)} & Ours              & 0.815 & 0.979 & 0.887 \\
+                                            & Kuppa and Le-Khac~\cite{Kuppa_2022} & 0.965 & 0.921 & 0.942 \\
+\midrule
+\multirow{2}{*}{Plain AE + NCM}             & Ours              & 0.666 & 0.979 & 0.788 \\
+                                            & Kuppa and Le-Khac~\cite{Kuppa_2022} & 0.788 & 0.766 & 0.777 \\
+\bottomrule
+\end{tabular}
+\end{table}

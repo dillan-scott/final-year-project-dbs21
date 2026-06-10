@@ -1,7 +1,7 @@
 \chapter{Implementation}
 \label{ch:implementation}
 
-This chapter describes how the target system of~\cref{ch:target_system_threat_model}, our evaluation pipeline and our attacks are realised in code. Because Kuppa and Le-Khac~\cite{Kuppa_2022} release neither code nor a precise specification of several components, we first reimplement their Contrastive NCM detector and confirm that the reimplementation reproduces their reported behaviour. We then build the coupled adaptive system in which the detector supervises a downstream base learner, and describe the design decisions that this required. Four of these decisions complete components that the paper leaves under-specified and each was surfaced by a concrete failure of a naive implementation rather than chosen a priori. We frame them as filling gaps in the paper's intended architecture, not as corrections to it. The chapter closes with the implementation of the attacks selected for evaluation in~\cref{ch:attack_taxonomy_objectives}.
+This chapter describes how the target system of~\cref{ch:target_system_threat_model}, our evaluation pipeline and our attacks are realised in code. Because Kuppa and Le-Khac~\cite{Kuppa_2022} release neither code nor a precise specification of several components, we first reimplement their Contrastive NCM detector and confirm that the reimplementation reproduces their reported behaviour. We then build the coupled adaptive system in which the detector supervises a downstream base learner, and describe the design decisions that this required. Four of these decisions complete components that the paper leaves underspecified and each was surfaced by a concrete failure of a naive implementation rather than chosen a priori. We frame them as filling gaps in the paper's intended architecture, not as corrections to it. The chapter closes with the implementation of the attacks selected for evaluation in~\cref{ch:attack_taxonomy_objectives}.
 
 \section{Datasets and Preprocessing}
 \label{sec:impl-data}
@@ -26,7 +26,7 @@ We validate the reimplementation on the paper's drift-detection protocol: a subs
 
 \input{./implementation/reproduction_detection_table.tex}
 
-The figure above establishes that the reimplementation detects drift as the paper's detector does; they say nothing about its adversarial robustness, which is the property for which the contrastive detector was originally proposed. We therefore also run the paper's instance-based poisoning experiment, where a growing fraction of adversarially perturbed novel samples is injected into training, and the contrastive detector's accuracy degrades gracefully with the injection ratio, reproducing the trend the paper reports. We stress that this is only a qualitative check. The paper's headline claim is comparative -- that the Contrastive NCM detector is more robust than its baselines -- and we do not cleanly reproduce that, because the plain-autoencoder baseline sits at the balanced-accuracy floor throughout. We also do not reproduce the paper's concept-based poisoning experiment as it is built on the MAA algorithm~\cite{Kuppa_2019}, a separate black-box manifold-approximation attack whose faithful reimplementation is out of scope.
+\cref{tab:impl-reproduction} above establishes that the reimplementation detects drift as the paper's detector does; is says nothing about its adversarial robustness, which is the property for which the contrastive detector was originally proposed. We therefore also run the paper's instance-based poisoning experiment, where a growing fraction of adversarially perturbed novel samples is injected into training, and the contrastive detector's accuracy degrades gracefully with the injection ratio, reproducing the trend the paper reports. We stress that this is only a qualitative check. The paper's headline claim is comparative -- that the Contrastive NCM detector is more robust than its baselines -- and we do not cleanly reproduce that, because the plain-autoencoder baseline sits at the balanced-accuracy floor throughout. We also do not reproduce the paper's concept-based poisoning experiment as it is built on the MAA algorithm~\cite{Kuppa_2019}, a separate black-box manifold-approximation attack whose faithful reimplementation is out of scope.
 
 \section{The Coupled Adaptive System}
 \label{sec:impl-coupled}
@@ -45,7 +45,7 @@ We use three configurations of the coupling, which together form an ablation lad
 \end{itemize}
 Fixing which part of the coupling is allowed to adapt lets us attribute observed effects to a specific mechanism rather than to the system as a whole.
 
-\section{Completing the Under-Specified Components}
+\section{Completing the underspecified Components}
 \label{sec:impl-refinements}
 Deploying the detector in a coupled setting forced four design decisions that the paper leaves open. We present each as the naive choice, the concrete failure it produced in our implementation, and the refinement that resolves it. We stress that these complete the paper's intended architecture rather than correct an error in it.
 

@@ -94,9 +94,9 @@ The caveat is the budget. Grey-box forcing requires $\epsilon = 2.0$ here, a lar
 \label{sec:eval-rq3-gate}
 The firing predicate is made up of three conjuncts -- displacement, count, and fraction (\cref{sec:axt-surface}). To attribute the system's behaviour to the individual floors we ablate the count and fraction conditions independently, across \texttt{displacement-only} (the paper's rule, neither floor), \texttt{count-only}, \texttt{fraction-only}, and the \texttt{full} gate we propose.
 
-\input{../experiments/contrastive_ncm/tables/rq3_gate_forcing.tex}
+\input{./evaluation/rq3_gate_forcing_table.tex}
 
-\input{../experiments/contrastive_ncm/tables/rq3_gate_suppression.tex}
+\input{./evaluation/rq3_gate_suppression_table.tex}
 
 Against forcing (\cref{tab:rq3-gate-forcing}, pre-drift injection of true-labelled flows), the two floors are not equal. The fraction floor alone blocks every forced fire at every budget, because at low injection the attacker's flows are only a small fraction of the drifted buffer which is already padded by the detector's own false positives, so the $0.3$ threshold is never reached. The count floor reduces the efficacy of forcing. It cuts forced fires from $14.7$ to $1.7$ at $p = 5\%$, but it alone is not sufficient since the $500$ samples it demands are within a determined attacker's budget. The full gate, exactly like fraction-only, is completely immune.
 

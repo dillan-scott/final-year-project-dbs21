@@ -2,9 +2,9 @@
 \caption{Backdooring the base learner through the composition channel. Benign-labelled \texttt{DoS} flows carrying a fixed feature-space trigger are injected (sustained, or poison-then-clean) and harvested into the retraining set. A backdoor is implanted when the false-negative rate on triggered \texttt{DoS} is high while clean \texttt{DoS} FNR and overall $F_1$ are unchanged. Values are mean $\pm$ std across three seeds and the accum=0 row disables the never-evict memory.}
 \label{tab:rq2-backdoor}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lcccc}
+\begin{tabular}{lrrrr}
 \toprule
- & Fri F1 & FNR(Clean \texttt{DoS}) & FNR(Triggered \texttt{DoS}) & Retrains \\
+ & Friday $F_1$ & FNR(Clean \texttt{DoS}) & FNR(Triggered \texttt{DoS}) & Retrains \\
 Condition &  &  &  &  \\
 \midrule
 Clean & 0.787 $\pm$ 0.055 & 0.012 $\pm$ 0.005 & 0.014 $\pm$ 0.005 & 2.333 $\pm$ 1.247 \\

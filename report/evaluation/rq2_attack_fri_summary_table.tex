@@ -1,0 +1,21 @@
+\begin{table}
+\caption{Friday end-of-stream attack effect on the full coupled adaptive IDS (\textsc{AdaptiveDAdaptiveM}). Values are mean $\pm$ std across three seeds.}
+\label{tab:attack-fri-summary}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llcccl}
+\toprule
+ & Poison \% & Fri $F_1$ & Fri FNR(\texttt{DoS}) & Fri FNR(\texttt{PS}) & Retrains \\
+System &  &  &  &  & \\
+\midrule
+\textsc{StaticDStaticM} & ref & 0.207 $\pm$ 0.000 & 0.881 $\pm$ 0.000 & 0.999 $\pm$ 0.000 & 0 \\
+\textsc{AdaptiveDAdaptiveM} & 0 & 0.710 $\pm$ 0.000 & 0.008 $\pm$ 0.000 & 0.983 $\pm$ 0.000 & 1 \\
+\textsc{AdaptiveDAdaptiveM} & 5 & 0.726 $\pm$ 0.034 & 0.014 $\pm$ 0.006 & 0.903 $\pm$ 0.137 & 1.3$\pm$0.5 \\
+\textsc{AdaptiveDAdaptiveM} & 15 & 0.820 $\pm$ 0.053 & 0.030 $\pm$ 0.003 & 0.529 $\pm$ 0.205 & 2.0$\pm$0.0 \\
+\textsc{AdaptiveDAdaptiveM} & 20 & 0.821 $\pm$ 0.053 & 0.033 $\pm$ 0.002 & 0.508 $\pm$ 0.175 & 2.0$\pm$0.0 \\
+\textsc{AdaptiveDAdaptiveM} & 25 & 0.207 $\pm$ 0.000 & 0.881 $\pm$ 0.000 & 0.999 $\pm$ 0.000 & 0.0$\pm$0.0 \\
+\textsc{AdaptiveDAdaptiveM} & 30 & 0.680 $\pm$ 0.006 & 0.055 $\pm$ 0.011 & 1.000 $\pm$ 0.000 & 1.0$\pm$0.0 \\
+\textsc{AdaptiveDAdaptiveM} & 35 & 0.702 $\pm$ 0.001 & 0.006 $\pm$ 0.001 & 1.000 $\pm$ 0.000 & 1.0$\pm$0.0 \\
+\bottomrule
+\end{tabular}
+}
+\end{table}

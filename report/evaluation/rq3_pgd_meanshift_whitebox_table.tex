@@ -1,0 +1,17 @@
+\begin{table}
+\caption{Accumulator attack via direct latent mean-shift: PGD jointly optimises two pools to maximise the separation of their drifted-batch means (the quantity the concept-discovery accumulator integrates), rather than pushing along a fixed random direction. A fire is forced only if the displacement exceeds $T$.}
+\label{tab:rq3-pgd-meanshift}
+\centering
+\begin{tabular}{lccccr}
+\toprule
+ & Flag A & Flag B & Displacement & Threshold ($T$) & Forces fire? \\
+$L_\infty$ budget ($\epsilon$) &  &  &  &  &  \\
+\midrule
+0.10 & 0.23 & 0.11 & 18.0 & 39.3 & False \\
+0.25 & 0.75 & 0.17 & 26.1 & 39.3 & False \\
+0.50 & 0.77 & 0.86 & 25.6 & 39.3 & False \\
+1.00 & 1.00 & 1.00 & 47.1 & 39.3 & True \\
+2.00 & 1.00 & 1.00 & 91.5 & 39.3 & True \\
+\bottomrule
+\end{tabular}
+\end{table}

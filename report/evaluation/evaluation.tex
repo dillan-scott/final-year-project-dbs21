@@ -1,6 +1,10 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
 
+% Render this chapter's tables and figures inline (where written) rather than letting them float.
+\floatplacement{table}{H}
+\floatplacement{figure}{H}
+
 This chapter evaluates the coupled adaptive system of~\cref{ch:implementation} against the attacks specified in~\cref{sec:axt-scope}. It is organised around the three research questions of this thesis, relating to: the attack surface the coupling exposes (RQ1), poisoning attacks on the base learner through the composition channel (RQ2), and evasion attacks on the detector through the trigger channel (RQ3). Each is presented as a hypothesis, the results, and a discussion.~\cref{sec:eval-settings} fixes the elements common to every experiment; experimental settings that vary between them are stated in a \textit{Setup} note at the head of each section.
 
 \section{Experimental Settings}
@@ -19,7 +23,7 @@ Before introducing an adversary we confirm that, on an unpoisoned stream, the co
 
 \input{./evaluation/baseline_adaptation_table.tex}
 
-% \begin{figure}[h]
+% \begin{figure}[H]
 %     \centering
 %     \includegraphics[width=\linewidth]{../experiments/contrastive_ncm/figures/rq2_streaming_timeseries.pdf}
 %     \caption{Per-batch stream $F_1$ and the \texttt{DoS} per-class false-negative rate over the week, baseline (no attack) versus a $5\%$ benign-labelled injection. Aggregate $F_1$ is barely moved while the per-class FNR is driven from near zero to $0.642$ --- the damage the headline metric conceals.}
@@ -42,11 +46,11 @@ The baseline run is itself the evidence. Because $\mathcal{M}$ changes only when
 
 Contrary to the hypothesis, a base learner retrained from scratch to convergence \emph{resists} this poisoning. Sweeping a benign-labelled injection of novel \texttt{DoS} flows over $p \in \{0, 5, \dots, 35\}\%$ and riding the genuine mid-week drift event, so that the mislabelled flows are placed into $\mathcal{M}$'s retraining set, leaves the \texttt{DoS} false-negative rate essentially at its clean value across the low and mid budgets ($0.019$ at $p = 0$, $0.014$ at $5\%$, $0.033$ at $20\%$ --~\cref{tab:attack-fri-summary}). The mislabelled flows are a down-weighted minority in a set dominated by correctly-labelled exemplars, so the rebuilt $\mathcal{M}$ still classifies \texttt{DoS} correctly. Persistence does not help: a \emph{durable} variant that injects only around the fire and then stops, lodging its payload in the never-evict exemplar memory, is absorbed just the same. The large per-class damage that a single under-trained rebuild would expose is therefore an artefact of the retraining recipe, not of the coupling; an encoder-freeze ablation (\textsc{StaticDAdaptiveM}) confirms there is no representation-level poisoning to relocate, the frozen-encoder false-negative rate being no lower than the adapting one.
 
-\input{../experiments/contrastive_ncm/tables/attack_fri_summary.tex}
+\input{./evaluation/rq2_attack_fri_summary_table.tex}
 
 So, the boundary cannot be moved against the genuine class, but it can be circumvented. The channel admits a backdoor, which succeeds precisely because it does not contend with the clean decision boundary. Rather than just mislabelling \texttt{DoS} as benign, the adversary also stamps them with a small feature-space trigger, teaching $\mathcal{M}$ that ``\texttt{DoS}-features $+$ trigger $\Rightarrow$ benign''. The trigger is inert on an un-poisoned learner -- it moves the \texttt{DoS} false-negative rate from $0.012$ to $0.014$ -- but after the backdoor is planted a \emph{triggered} \texttt{DoS} flow evades $\mathcal{M}$ with false-negative rate $0.69$, while \emph{clean} \texttt{DoS} is still caught (with false-negative rate $0.03$). The backdoor is also durable: the adversary injects only around the genuine mid-week fire and then stops, yet the backdoor persists regardless of any further retrains. This is because of all the harvested concept exemplars that carry the trigger being replayed into every subsequent rebuild -- the never-evict exemplar memory (\cref{sec:impl-retrain}) turned against the system. Here, the robust learner resists having its boundary moved, but not having a hidden shortcut installed beside it.
 
-\input{../experiments/contrastive_ncm/tables/rq2_backdoor.tex}
+\input{./evaluation/rq2_backdoor_table.tex}
 
 Beyond what the rebuilt $\mathcal{M}$ learns, the channel exposes control over whether it is rebuilt at all. Because the firing gate counts attack-labelled drifted samples (\cref{sec:impl-gate}) and benign-labelled flows are drifted but not attack-labelled, a sufficient injection dilutes the buffer below the gate and starves retraining. At the knife-edge fraction $p = 25\%$ the system never fires for the whole stream, and $F_1$ collapses to the no-adaptation floor of $0.207$ with both novel classes left unlearned. The collapse is sharp and non-monotonic ($p = 20\%$ and $p = 30\%$ still fire).
 
@@ -67,9 +71,9 @@ We separate two things that are easily conflated: making the detector \emph{flag
 
 % \input{./evaluation/rq3_pgd_false_positive_table.tex}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\linewidth]{../experiments/contrastive_ncm/figures/rq3_pgd_false_positive.pdf}
+    \includegraphics[width=0.7\linewidth]{../experiments/contrastive_ncm/figures/rq3_pgd_false_positive.pdf}
     \caption{PGD false-positive attack on per-sample detection: fraction of perturbed known-class flows the victim flags as drifted versus the $L_\infty$ budget, white-box against the victim and grey-box via surrogate transfer.}
     \label{fig:eval-rq3-pgd}
 \end{figure}
@@ -78,13 +82,11 @@ We separate two things that are easily conflated: making the detector \emph{flag
 \label{sec:eval-rq3-force}
 Forcing therefore requires displacing the batch mean coherently. Naively applying coherent perturbations along a random direction fails. Even white-box at $\epsilon = 2.0$ the accumulated displacement reaches only $29.5$, short of the required threshold $T = 39.3$, and forces no fire. This is what initially looked like robustness. However, we conclude that it is not; it is a weak attack. An aimed mean-shift attack, which optimises two opposing perturbations to maximise the separation of the encoder's batch means, crosses $T$ at $\epsilon \ge 1.0$, reaching displacements of $47$ at $\epsilon = 1.0$ and $92$ at $\epsilon = 2.0$ (\cref{tab:rq3-pgd-meanshift}). Thereby forcing a concept-discovery event white-box.
 
-\input{../experiments/contrastive_ncm/tables/rq3_pgd_meanshift.tex}
-\todo[color=purple]{Position the white-box meanshift attack table properly.}
+\input{./evaluation/rq3_pgd_meanshift_whitebox_table.tex}
 
 The most consequential result is that this attack transfers. Crafted against a data-disjoint surrogate and evaluated on the victim, the mean-shift retains roughly $70\%$ of its white-box displacement -- $33$ at $\epsilon = 1.0$ and $65$ at $\epsilon = 2.0$ (\cref{tab:rq3-pgd-meanshift-greybox}). That clears $T = 39.3$ and forces a fire at $\epsilon = 2.0$ while at $\epsilon = 1.0$ the transferred displacement falls just short. This stands in sharp contrast to per-sample detection, which transferred poorly ($\le 60\%$): a per-sample flag requires every sample to individually clear the threshold, which is brittle across two independently-trained encoders. Whereas, the trigger fires on a batch mean and averaging launders the per-sample transfer noise, leaving the coherent direction both encoders agree on. The batch-mean statistic the detector adopts for stability is precisely what makes the trigger grey-box forceable.
 
-\input{../experiments/contrastive_ncm/tables/rq3_pgd_meanshift_greybox.tex}
-\todo[color=purple]{Position the grey-box meanshift attack table properly.}
+\input{./evaluation/rq3_pgd_meanshift_greybox_table.tex}
 
 The caveat is the budget. Grey-box forcing requires $\epsilon = 2.0$ here, a large, unconstrained $L_\infty$ perturbation in standardised-feature units that would almost certainly distort flows beyond what protocol constraints permit; a feature-constrained mean-shift would raise the bar further and is left to future work. Within the adopted grey-box threat model, however, the conclusion stands: the concept trigger is forceable, not robust, and the attack is bounded only by the perturbation budget.
 
@@ -93,10 +95,8 @@ The caveat is the budget. Grey-box forcing requires $\epsilon = 2.0$ here, a lar
 The firing predicate is made up of three conjuncts -- displacement, count, and fraction (\cref{sec:axt-surface}). To attribute the system's behaviour to the individual floors we ablate the count and fraction conditions independently, across \texttt{displacement-only} (the paper's rule, neither floor), \texttt{count-only}, \texttt{fraction-only}, and the \texttt{full} gate we propose.
 
 \input{../experiments/contrastive_ncm/tables/rq3_gate_forcing.tex}
-\todo[color=purple]{Position the gate ablation (forcing) table properly.}
 
 \input{../experiments/contrastive_ncm/tables/rq3_gate_suppression.tex}
-\todo[color=purple]{Position the gate ablation (suppression) table properly.}
 
 Against forcing (\cref{tab:rq3-gate-forcing}, pre-drift injection of true-labelled flows), the two floors are not equal. The fraction floor alone blocks every forced fire at every budget, because at low injection the attacker's flows are only a small fraction of the drifted buffer which is already padded by the detector's own false positives, so the $0.3$ threshold is never reached. The count floor reduces the efficacy of forcing. It cuts forced fires from $14.7$ to $1.7$ at $p = 5\%$, but it alone is not sufficient since the $500$ samples it demands are within a determined attacker's budget. The full gate, exactly like fraction-only, is completely immune.
 

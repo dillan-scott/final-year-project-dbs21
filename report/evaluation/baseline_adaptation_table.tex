@@ -1,0 +1,18 @@
+\begin{table}
+\caption{Baseline (no attack) per-day metrics for the static reference and the full system. $F_1$ is measured against a fixed novel-class-aware benchmark and false-negative rate is measured for each novel class.}
+\label{tab:baseline-adaptation}
+\centering
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{3}{c}{\textsc{StaticDStaticM}} & \multicolumn{3}{c}{\textsc{AdaptiveDAdaptiveM}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Day & $F_1$ & FNR(\texttt{DoS}) & FNR(\texttt{PortScan}) & $F_1$ & FNR(\texttt{DoS}) & FNR(\texttt{PortScan}) \\
+\midrule
+Mon & 0.207 & 0.881 & 0.999 & 0.207 & 0.881 & 0.999 \\
+Tue & 0.207 & 0.881 & 0.999 & 0.207 & 0.881 & 0.999 \\
+Wed & 0.207 & 0.881 & 0.999 & 0.346 & 0.640 & 0.995 \\
+Thu & 0.207 & 0.881 & 0.999 & 0.710 & 0.008 & 0.983 \\
+Fri & 0.207 & 0.881 & 0.999 & 0.710 & 0.008 & 0.983 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -27,7 +27,7 @@ We do not refute the robustness claims of Kuppa and Le-Khac~\cite{Kuppa_2022}; r
 \section{Objectives}
 The primary objective of this research is to characterise how an adversary can corrupt a coupled adaptive learning system equipped with the Contrastive NCM detector, and at what budget such corruption can be sustained.
 
-We meet this objective in three parts. First, we formalise a threat model and attack taxonomy for the coupled system, identifying attack surfaces that a trigger-dependent architecture exposes but a continuous-update architecture does not. Second, we attack these surfaces to determine whether the base learner can be corrupted, and at what ongoing poisoning budget. Third, we attack the detector itself to determine whether its representation can be corrupted to control the base learner's adaptation, and at what cost to its sensitivity to genuine concept drift.
+We meet this objective in three parts. First, we formalise a threat model and attack taxonomy for the coupled system, identifying attack surfaces that a trigger-dependent architecture exposes but a continuous-update architecture does not. Second, we attack these surfaces to determine whether the base learner can be corrupted. Third, we attack the detector itself to determine whether it can be manipulated to control the base learner's adaptation.
 
 % The primary objective of this research is to critically evaluate the resilience of concept drift detection mechanisms against adaptive adversaries. First, this thesis will formalise a taxonomy of threat models, explicitly distinguishing between open-loop and closed-loop, to define how attackers exploit system outputs. Building on this framework, the thesis aims to propose a novel feedback-guided attack strategy designed to induce semantic drift while avoiding detection thresholds.
 
@@ -38,27 +38,27 @@ We meet this objective in three parts. First, we formalise a threat model and at
 \label{sec:research questions}
 To meet the objectives described in the previous section, we address the following research questions:
 \begin{enumerate}
-    \item What attack surfaces does the coupling between detector and trigger-dependent base learner introduce that a continuous-update architecture does not?
+    \item What attack surfaces does trigger-gated retraining -- coupling a drift detector and an otherwise static base learner -- expose, that a continuously updated learner does not?
 
-    \item Can an adversary exploit these surfaces to corrupt the base learner, and at what ongoing poisoning budget?
+    \item Can an adversary corrupt the base learner through the retraining dataset, and what corruption does the coupled system resist or allow?
 
-    \item Can the detector's representation be corrupted to control the base learner's adaptation, and at what cost to its drift sensitivity?
+    \item Can an adversary control the firing trigger to either force false positives or suppress true positives, and what does a gating mechanism hardened against one failure mode cost in the other?
 \end{enumerate}
 
 \section{Thesis Structure}
 The remainder of this thesis is organised as follows: 
 \begin{itemize}
-    \item \cref{ch:background} reviews the background literature on continual learning and adversarial attacks. 
+    \item~\cref{ch:background} reviews the background literature on continual learning and adversarial attacks. 
     
-    \item \cref{ch:target_system_threat_model} formalises the target system and establishes the threat model, defining the adversary's objectives, knowledge, and capabilities.
+    \item~\cref{ch:target_system_threat_model} formalises the target system and establishes the threat model, defining the adversary's objectives, knowledge, and capabilities.
     
-    \item \cref{ch:attack_taxonomy_objectives} presents a taxonomy of attacks against the coupled system and introduces the idea of maintenance cost. 
+    \item~\cref{ch:attack_taxonomy_objectives} presents a taxonomy of attacks against the coupled system and introduces the idea of maintenance cost. 
     
-    \item \cref{ch:implementation} describes the implementation of the coupled system, including four architectural refinements that clarify the underspecified components of the paper's intended architecture, and attacks selected for evaluation.
+    \item~\cref{ch:implementation} describes the implementation of the coupled system, including four architectural refinements that clarify the underspecified components of the paper's intended architecture, and attacks selected for evaluation.
     
-    \item \cref{ch:evaluation} evaluates the implemented attacks against the coupled system, measuring their impact on the base learner's predictive performance and the detector's representation.
+    \item~\cref{ch:evaluation} evaluates the implemented attacks against the coupled system, measuring their impact on the base learner's predictive performance and the detector's performance.
     
-    \item \cref{ch:conclusion} summarises the findings, discusses their implications for the design of robust adaptive learning systems, and outlines directions for future research.
+    \item~\cref{ch:conclusion} summarises the findings, discusses their implications for the design of robust adaptive learning systems, and outlines directions for future research.
     
-    \item \cref{ch:ethics} provides a discussion of wider ethical, legal, professional and societal issues surrounding this project and the accompanying research.
+    \item~\cref{ch:ethics} provides a discussion of wider ethical, legal, professional and societal issues surrounding this project and the accompanying research.
 \end{itemize}

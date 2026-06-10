@@ -1,10 +1,10 @@
 \chapter{Target System and Threat Model}
 \label{ch:target_system_threat_model}
 
-This chapter formalises the adaptive learning pipeline targeted in this research and defines the adversary attempting to compromise it. We first describe the architecture of the target system, a static base learner coupled to an adversarially robust drift detector, and then establish the threat model under which the attacks of \cref{ch:attack_taxonomy_objectives,ch:evaluation} are mounted.
+This chapter formalises the adaptive learning pipeline targeted in this research and defines the adversary attempting to compromise it. We first describe the architecture of the target system, a static base learner coupled to an adversarially robust drift detector, and then establish the threat model under which the attacks of~\cref{ch:attack_taxonomy_objectives,ch:evaluation} are mounted.
 
 \section{Target System Architecture}
-The system under evaluation addresses concept drift in the typical way: by augmenting the base learner with a drift detector, as mentioned in \cref{sec:drift_detection}. However, this approach differs in that the supervisory module is dynamic. While traditional detectors rely on fixed statistical thresholds or heuristics, this architecture uses a trainable drift detector. It learns a compressed latent representation of the known data distribution and measures deviation using class prototypes in that space to identify distributional shifts. This approach is intended to provide robustness to adversarial manipulation, a property which is scrutinised in the following chapters of this thesis.
+The system under evaluation addresses concept drift in the typical way: by augmenting the base learner with a drift detector, as mentioned in~\cref{sec:drift_detection}. However, this approach differs in that the supervisory module is dynamic. While traditional detectors rely on fixed statistical thresholds or heuristics, this architecture uses a trainable drift detector. It learns a compressed latent representation of the known data distribution and measures deviation using class prototypes in that space to identify distributional shifts. This approach is intended to provide robustness to adversarial manipulation, a property which is scrutinised in the following chapters of this thesis.
 
 The two components of the system, and the manner in which they are integrated, are described below.
 
@@ -15,16 +15,16 @@ The base learner $\mathcal{M}$ is a binary multi-layer perceptron trained to cla
 \]
 
 \subsection{The Drift Detector}
-The drift detector $\mathcal{D}$ is the Contrastive NCM detector of Kuppa and Le-Khac~\cite{Kuppa_2022}, whose components are described in \cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in \cref{ch:implementation}.
+The drift detector $\mathcal{D}$ is the Contrastive NCM detector of Kuppa and Le-Khac~\cite{Kuppa_2022}, whose components are described in~\cref{sec:contrastive_ncm}. Two thresholds govern its behaviour: the drift threshold $T_{drift}$, used to flag individual samples as drifted; and the concept threshold $T$, used to register a new class once the accumulated displacement of buffered drifted embeddings crosses it. Neither is specified a priori by~\cite{Kuppa_2022}; both are calibrated on a held-out sample of known-class data, with the specific procedure detailed in~\cref{ch:implementation}.
 
 \subsection{System Integration and Adaptation Cycle}
 \label{sec:adaptation_cycle}
-The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. Following the concept-discovery mechanism of~\cref{sec:concept_discovery}, $\mathcal{D}$ flags drifted samples in each batch and accumulates them in the concept-discovery buffer. In the formulation of Kuppa and Le-Khac~\cite{Kuppa_2022}, a new concept is registered once the accumulated displacement crosses $T$ (\cref{eq:concept-threshold}). In our coupled system, this displacement test is necessary but not sufficient: a retraining event fires only when the buffer also holds a minimum \textit{count} and \textit{fraction} of attack-labelled drifted samples. These two floors complete the paper's under-specified firing rule; we state them structurally here and give their values and empirical motivation in~\cref{ch:implementation}. More generally, the coupling operates through two channels: a \textit{trigger channel}, deciding when a retraining event fires, and a \textit{composition channel}, governing what data $\mathcal{D}$ and $\mathcal{M}$ are retrained on.
+The system couples $\mathcal{D}$ and $\mathcal{M}$ through a trigger-dependent adaptation mechanism: in general $\mathcal{M}$ is static, only being updated when $\mathcal{D}$ registers a new concept. Following the concept-discovery mechanism of~\cref{sec:concept_discovery}, $\mathcal{D}$ flags drifted samples in each batch and accumulates them in the concept-discovery buffer. In the formulation of Kuppa and Le-Khac~\cite{Kuppa_2022}, a new concept is registered once the accumulated displacement crosses $T$ (\cref{eq:concept-threshold}). In our coupled system, this displacement test is necessary but not sufficient: a retraining event fires only when the buffer also holds a minimum \emph{count} and \emph{fraction} of attack-labelled drifted samples. These two floors complete the paper's under-specified firing rule; we state them structurally here and give their values and empirical motivation in~\cref{ch:implementation}. More generally, the coupling operates through two channels: a \emph{trigger channel}, deciding when a retraining event fires, and a \emph{composition channel}, governing what data $\mathcal{D}$ and $\mathcal{M}$ are retrained on.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\linewidth]{target_system_threat_model/target_architecture.drawio.pdf}
-    \caption{The architecture of the target system. $\mathcal{D}$ and $\mathcal{M}$ consume the input stream in parallel: $\mathcal{M}$ produces classifications while $\mathcal{D}$ monitors for drift, accumulating flagged samples in the concept-discovery buffer. When the paper's concept discovery condition is met ($\|\Delta\| > T$), the coupling layer (detailed in \cref{ch:implementation}) evaluates a set of additional conditions and, only if these are satisfied, triggers a retraining event (dashed): a new prototype is registered, and the encoder and $\mathcal{M}$ are replaced by new models trained on a new dataset composed by the coupling layer.}
+    \caption{The architecture of the target system. $\mathcal{D}$ and $\mathcal{M}$ consume the input stream in parallel: $\mathcal{M}$ produces classifications while $\mathcal{D}$ monitors for drift, accumulating flagged samples in the concept-discovery buffer. When the paper's concept discovery condition is met ($\|\Delta\| > T$), the coupling layer (detailed in~\cref{ch:implementation}) evaluates a set of additional conditions and, only if these are satisfied, triggers a retraining event (dashed): a new prototype is registered, and the encoder and $\mathcal{M}$ are replaced by new models trained on a new dataset composed by the coupling layer.}
     \label{fig:target architecture}
 \end{figure}
 
@@ -42,35 +42,35 @@ For an injection rate $p \in [0, 1]$, the adversary may add up to $\lfloor\,p\, 
 \end{equation}
 \end{definition}
 
-Because injected flows augment rather than replace the batch, an injection rate $p$ contaminates a fraction $p / (1 + p)$ of the resulting batch. Sustaining an attack across a window of $W$ consecutive batches costs at most $p \sum_{t=1}^{W} n_t$ injected flows in total; we characterise this budget empirically in \cref{ch:evaluation}.
+Because injected flows augment rather than replace the batch, an injection rate $p$ contaminates a fraction $p / (1 + p)$ of the resulting batch. Sustaining an attack across a window of $W$ consecutive batches costs at most $p \sum_{t=1}^{W} n_t$ injected flows in total; we characterise this budget empirically in~\cref{ch:evaluation}.
 
 \subsection{Attacker Objectives}
-The primary objective of an adversary is to degrade the predictive performance of the coupled system on genuine traffic. Since $\mathcal{M}$ is static between retraining events, it cannot be corrupted directly. The adversary can act only through the coupling layer of \cref{sec:adaptation_cycle} -- that is, through its trigger and composition channels. This manifests in two distinct ways:
+The primary objective of an adversary is to degrade the predictive performance of the coupled system on genuine traffic. Since $\mathcal{M}$ is static between retraining events, it cannot be corrupted directly. The adversary can act only through the coupling layer of~\cref{sec:adaptation_cycle} -- that is, through its trigger and composition channels. This manifests in two distinct ways:
 \begin{itemize}
-    \item \textit{Forcing False Adaptation}: the adversary piggybacks on a genuine retraining event or induces the coupling layer to fire while the underlying distribution is stable, causing $\mathcal{M}$ to be rebuilt on adversary-influenced data and consuming computational resources.
+    \item \textit{Forcing false adaptation}: the adversary piggybacks on a genuine retraining event or induces the coupling layer to fire while the underlying distribution is stable, causing $\mathcal{M}$ to be rebuilt on adversary-influenced data and consuming computational resources.
 
-    \item \textit{Impairing Adaptation}: the adversary masks genuine drift so that the coupling layer does not fire when it should, leaving $\mathcal{M}$ stale. A subtler variant lets the event fire but biases the composition of the retraining set so that the rebuilt $\mathcal{M}$ is itself degraded.
+    \item \textit{Impairing adaptation}: the adversary masks genuine drift so that the coupling layer does not fire when it should, leaving $\mathcal{M}$ stale. A subtler variant lets the event fire but biases the composition of the retraining set so that the rebuilt $\mathcal{M}$ is itself degraded.
 \end{itemize}
 
 \subsection{Attacker Knowledge}
 The viability of an attack depends heavily on the adversary's understanding of the target system. We frame the attacker's knowledge under three assumptions:
 \begin{itemize}
-    \item \textit{White-Box}: the adversary possesses complete knowledge of the system, including $\mathcal{D}$'s encoder weights and class prototypes, the current parameters of $\mathcal{M}$, the batch size, the coupling layer's firing conditions, and the calibrated values of the thresholds $T_{drift}$ and $T$.
+    \item \textit{White-box}: the adversary possesses complete knowledge of the system, including $\mathcal{D}$'s encoder weights and class prototypes, the current parameters of $\mathcal{M}$, the batch size, the coupling layer's firing conditions, and the calibrated values of the thresholds $T_{drift}$ and $T$.
 
-    \item \textit{Grey-Box}: the adversary knows the general architecture, that a Contrastive NCM detector $\mathcal{D}$ is coupled to an MLP base learner $\mathcal{M}$ via the adaptation cycle of \cref{sec:adaptation_cycle}, and the features of the stream, but lacks real-time access to the internal weights, the concept-discovery buffer, or the exact threshold and gate values.
+    \item \textit{Grey-box}: the adversary knows the general architecture, that a Contrastive NCM detector $\mathcal{D}$ is coupled to an MLP base learner $\mathcal{M}$ via the adaptation cycle of~\cref{sec:adaptation_cycle}, and the features of the stream, but lacks real-time access to the internal weights, the concept-discovery buffer, or the exact threshold and gate values.
 
-    \item \textit{Black-Box}: the adversary is unaware of the specific detector or base learner implemented. They observe only the output predictions and the raw incoming stream, and must infer system behaviour from changes in its external responses.
+    \item \textit{Black-box}: the adversary is unaware of the specific detector or base learner implemented. They observe only the output predictions and the raw incoming stream, and must infer system behaviour from changes in its external responses.
 \end{itemize}
 
 \subsection{Attacker Capabilities}
 \label{sec:attacker_capabilities}
-The adversary is assumed to have write access to the data ingestion pipeline, allowing them to inject crafted flows into the stream before it reaches the system, subject to the budget of \cref{def:injection_budget}. Two manipulation capabilities are available:
+The adversary is assumed to have write access to the data ingestion pipeline, allowing them to inject crafted flows into the stream before it reaches the system, subject to the budget of~\cref{def:injection_budget}. Two manipulation capabilities are available:
 \begin{itemize}
-    \item \textit{Label Flipping}: assigning an injected flow a label that contradicts its true class.
+    \item \textit{Label flipping}: assigning an injected flow a label that contradicts its true class.
 
-    \item \textit{Feature Manipulation}: perturbing the feature vector of an injected flow within a bounded budget; exercised to craft known-class flows that cross $\mathcal{D}$'s drift threshold without forming a genuine new class. Constraining such perturbations to protocol-valid flows is left to future work (\cref{ch:conclusion}).
+    \item \textit{Feature manipulation}: perturbing the feature vector of an injected flow within a bounded budget; exercised to craft known-class flows that cross $\mathcal{D}$'s drift threshold without forming a genuine new class. Constraining such perturbations to protocol-valid flows is left to future work (\cref{ch:conclusion}).
 \end{itemize}
 The budget $p < 1$ reflects the assumption that an adversary cannot overwrite the entire stream: doing so would be trivially detectable by upstream anomaly detection.
 
 \subsection{Adopted Threat Model}
-The experiments of \cref{ch:evaluation} operate primarily under the grey-box setting. The adversary knows the coupled $\mathcal{D}$--$\mathcal{M}$ architecture and the structure of the adaptation cycle, but has no access to the live encoder weights, the prototype set, the contents of the concept-discovery buffer, or the calibrated threshold and gate values. Within this setting we exercise both primitives of \cref{sec:attacker_capabilities}: label-flipped injection (for the poisoning and suppression attacks) and feature-space perturbation (for the false-positive attack on $\mathcal{D}$).
+The experiments of~\cref{ch:evaluation} operate primarily under the grey-box setting. The adversary knows the coupled $\mathcal{D}$--$\mathcal{M}$ architecture and the structure of the adaptation cycle, but has no access to the live encoder weights, the prototype set, the contents of the concept-discovery buffer, or the calibrated threshold and gate values. Within this setting we exercise both primitives of~\cref{sec:attacker_capabilities}: label-flipped injection (for the poisoning and suppression attacks) and feature-space perturbation (for the false-positive attack on $\mathcal{D}$).

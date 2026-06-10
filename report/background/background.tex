@@ -19,16 +19,16 @@ The joint probability can be given by the decomposition
 where $p(y \mid X)$ is the conditional distribution of the target given the input features and $p(X)$ is the probability distribution of the input features. Based on this, the literature~\cite{Gao_2007, Gama_2014, Korycki_2022} distinguishes between two forms of concept drift:
 
 \begin{enumerate}
-    \item \textit{Real Drift}: When $p(y \mid X)$ changes without a change in $p(X)$ (Conditional Change) or with it (Dual Change). This is the more critical form of drift, as it directly affects decision rules or classification boundaries, making model adaptation necessary.
+    \item \textit{Real drift}: When $p(y \mid X)$ changes without a change in $p(X)$ (Conditional Change) or with it (Dual Change). This is the more critical form of drift, as it directly affects decision rules or classification boundaries, making model adaptation necessary.
     
-    \item \textit{Virtual Drift (Feature Change)}: When $p(X)$ changes without affecting $p(y \mid X)$. While this may appear less important than real drift because the decision function is left unchanged, it cannot be ignored. In particular, changes in $p(X)$ may trigger adaptation or forgetting mechanisms, potentially leading to unnecessary or even harmful model updates.
+    \item \textit{Virtual drift (feature change)}: When $p(X)$ changes without affecting $p(y \mid X)$. While this may appear less important than real drift because the decision function is left unchanged, it cannot be ignored. In particular, changes in $p(X)$ may trigger adaptation or forgetting mechanisms, potentially leading to unnecessary or even harmful model updates.
 \end{enumerate}
 
 \subsubsection{Temporal Characteristics}
 In addition to the above types, based on probabilities, concept drift can be categorised based on how the change occurs over time. Namely, four common patterns are shown in~\cref{fig:drift types}~\cite{Lu_2018}.
 
 \begin{enumerate}
-    \item \textit{Sudden/Abrupt drift} is when the instance distribution or concept changes within a very short time frame. The previous concept immediately becomes invalid, and the learner must adapt quickly to maintain performance~\cite{Korycki_2022}.
+    \item \textit{Sudden/abrupt drift} is when the instance distribution or concept changes within a very short time frame. The previous concept immediately becomes invalid, and the learner must adapt quickly to maintain performance~\cite{Korycki_2022}.
     
     \item \textit{Gradual drift} is where instances from the old and new concepts coexist for a period, with old appearing with decreasing frequency~\cite{Korycki_2022}.
     
@@ -54,16 +54,16 @@ In data stream learning, concept drift is typically addressed by augmenting the 
 Although they are algorithmically diverse, most concept drift detection systems follow a common architectural pattern. This architecture can be decomposed into four conceptual components:
 
 \begin{enumerate}
-    \item \textit{Observation Source}: The detector monitors a stream of signals derived either from the data itself or from the performance of a base learner. Common sources include error rates, loss values, feature statistics, or latent representations.
+    \item \textit{Observation source}: The detector monitors a stream of signals derived either from the data itself or from the performance of a base learner. Common sources include error rates, loss values, feature statistics, or latent representations.
     
-    \item \textit{Summary Mechanism}: Observations are aggregated over time using sliding windows, cumulative statistics, or incremental estimators. This step compresses the raw stream into a tractable representation that reflects the system behaviour of a given period.
+    \item \textit{Summary mechanism}: Observations are aggregated over time using sliding windows, cumulative statistics, or incremental estimators. This step compresses the raw stream into a tractable representation that reflects the system behaviour of a given period.
     
-    \item \textit{Change Test}: A statistical test, threshold comparison, or learned decision rule evaluates whether the observed summary deviates significantly from a reference/historical summary. This comparison may rely on bounds derived from concentration inequalities, hypothesis tests, or reconstruction error metrics.
+    \item \textit{Change test}: A statistical test, threshold comparison, or learned decision rule evaluates whether the observed summary deviates significantly from a reference/historical summary. This comparison may rely on bounds derived from concentration inequalities, hypothesis tests, or reconstruction error metrics.
     
-    \item \textit{Decision and Response}: Upon detecting significant deviation, the detector emits a signal (sometimes distinguishing between a warning and confirmed drift) which triggers downstream actions such as retraining, window resetting, or model replacement.
+    \item \textit{Decision and response}: Upon detecting significant deviation, the detector emits a signal (sometimes distinguishing between a warning and confirmed drift) which triggers downstream actions such as retraining, window resetting, or model replacement.
 \end{enumerate}
 
-This modular structure highlights an important property of drift detectors: they act as \textit{control mechanisms} governing when and how adaptive learning occurs. As such, their behaviour has long-term consequences for system performance, stability, and robustness.
+This modular structure highlights an important property of drift detectors: they act as \emph{control mechanisms} governing when and how adaptive learning occurs. As such, their behaviour has long-term consequences for system performance, stability, and robustness.
 \missingfigure{Maybe a wireframe of drift detection architecture}
 
 \subsection{Drift Detection Algorithms}
@@ -111,7 +111,7 @@ In contrast, these methods monitor the statistical properties of the input featu
 \subsection{Limitations and Weaknesses}
 While the drift detectors described above do provide robust mechanisms for adaptation, they are subject to inherent limitations and trade-offs between sensitivity (minimising false negatives) and specificity (minimising false positives). Rather than arising from flawed algorithms, many of these weaknesses are due to the statistical assumptions made by classical drift detection; most notably, finite-sample estimation, approximate stationarity within windows, and the use of fixed confidence bounds to identify change.
 
-These limitations can be mapped onto the general architecture of drift detectors introduced earlier in~\cref{sec:drift detection architecture}. Choices made at the level of the \textit{observation source} (e.g. error rates or feature statistics), the \textit{summary mechanism} (e.g. windowing or cumulative statistics), and the \textit{change test} (e.g. hypothesis tests or thresholds) impose constraints on what types of drift can be reliably identified and how quickly.
+These limitations can be mapped onto the general architecture of drift detectors introduced earlier in~\cref{sec:drift detection architecture}. Choices made at the level of the observation source (e.g. error rates or feature statistics), the summary mechanism (e.g. windowing or cumulative statistics), and the change test (e.g. hypothesis tests or thresholds) impose constraints on what types of drift can be reliably identified and how quickly.
 
 \subsubsection{Sensitivity to Gradual Drift}
 A limitation of some error-based detectors, such as DDM, is the reduced ability to distinguish between stationary noise and gradual concept drift. In the presence of abrupt drift, the error rate typically exhibits a sharp increase, triggering the detector's thresholds (defined for DDM in~\cref{eq:DDM warning} and~\cref{eq:DDM confirmation}). However, during a gradual drift, the error rate may increase too slowly to violate the statistical bounds.
@@ -128,7 +128,7 @@ During periods of high verification latency, the detector effectively cannot obs
 \subsubsection{Virtual Drift and False Positives}
 Distribution-based detectors address the problem with label dependency by monitoring the input feature distribution $P(X)$ rather than model error. While this enables detection in settings with delayed or missing labels, it introduces a different weakness related to virtual drift. A statistically significant change in $P(X)$ does not always imply a change in the conditional distribution $P(y \mid X)$. It therefore does not guarantee that the predictive decision boundary has changed.
 
-Consequently, distribution-based detectors may generate false positives, triggering model retraining or data forgetting even when performance remains stable (there is no \textit{real} drift). Such unnecessary adaptation can be computationally expensive and may temporarily degrade performance.
+Consequently, distribution-based detectors may generate false positives, triggering model retraining or data forgetting even when performance remains stable (there is no real drift). Such unnecessary adaptation can be computationally expensive and may temporarily degrade performance.
 
 \subsubsection{Dimensionality and Feature Relevance}
 In high-dimensional settings, distribution-based detectors rely on density estimation or projection techniques that are sensitive to the curse of dimensionality. As the number of dimensions increases, data sparsity reduces the reliability of density estimates, while dimensionality reduction risks discarding directions along which drift is relevant. Moreover, distribution-based detectors typically treat all features with equal importance, meaning they are susceptible to changes in weakly relevant features that may not materially affect model performance.
@@ -137,18 +137,18 @@ In high-dimensional settings, distribution-based detectors rely on density estim
 \section{Adversarial Concept Drift}
 Classical concept drift assumes that changes in the data distribution arise from natural, exogenous factors such as evolving user behaviour, seasonality, or changes in the underlying environment. In contrast, adversarial drift assumes that there is a purposeful and potentially malicious actor attempting to manipulate our adaptive learning system~\cite{Korycki_2022}. The potential goals they may have will be discussed in the next section. 
 
-In such settings, the drift process is no longer passive. Instead, the data stream itself becomes an attack surface, and the drift detector becomes a target. Adversarial drift extends traditional data poisoning attacks by exploiting temporal dynamics and specific detector behaviours. Rather than corrupting a static training set, the adversary seeks to control \textit{when} adaptation is triggered, \textit{what data} is included during retraining, and \textit{which information} is forgotten. This introduces a new class of threats that cannot be fully explained by classical adversarial learning models alone~\cite{Kloft_2010}.
+In such settings, the drift process is no longer passive. Instead, the data stream itself becomes an attack surface, and the drift detector becomes a target. Adversarial drift extends traditional data poisoning attacks by exploiting temporal dynamics and specific detector behaviours. Rather than corrupting a static training set, the adversary seeks to control when adaptation is triggered, what data is included during retraining, and which information is forgotten. This introduces a new class of threats that cannot be fully explained by classical adversarial learning models alone~\cite{Kloft_2010}.
 
 \subsection{Adversarial Objectives}
 An adversary interacting with an adaptive learning system may pursue several objectives, which are not mutually exclusive.
 
-A primary objective could be \textit{performance degradation}, where the adversary seeks to reduce the predictive accuracy or increase the loss of a system~\cite{Sethi_2018}. Unlike poisoning attacks, adversarial drift may be gradual, ensuring that degradation accumulates slowly while remaining below detection thresholds.
+A primary objective could be \emph{performance degradation}, where the adversary seeks to reduce the predictive accuracy or increase the loss of a system~\cite{Sethi_2018}. Unlike poisoning attacks, adversarial drift may be gradual, ensuring that degradation accumulates slowly while remaining below detection thresholds.
 
-This could be seen as a potential secondary objective: \textit{evasion of detection}. Here, the adversary aims to avoid the activation of the drift detector while pursuing their primary objective. This could involve crafting inputs that move the decision boundary while preserving the statistics monitored, hence exploiting the blind spots of classical detectors.
+This could be seen as a potential secondary objective: \emph{evasion of detection}. Here, the adversary aims to avoid the activation of the drift detector while pursuing their primary objective. This could involve crafting inputs that move the decision boundary while preserving the statistics monitored, hence exploiting the blind spots of classical detectors.
 
-Alternatively, an adversary may attempt \textit{forced adaptation}, deliberately triggering false drift alarms to cause unnecessary retraining or forgetting. Such behaviour can destabilise the learning process, increase computational costs, or induce catastrophic forgetting of valid historical concepts~\cite{Korycki_2022}. Conversely, an adversary could seek to \textit{block adaptation}, injecting contradictory data points during a period of valid concept drift, in an attempt to nullify the adaptation process~\cite{Korycki_2022}.
+Alternatively, an adversary may attempt \emph{forced adaptation}, deliberately triggering false drift alarms to cause unnecessary retraining or forgetting. Such behaviour can destabilise the learning process, increase computational costs, or induce catastrophic forgetting of valid historical concepts~\cite{Korycki_2022}. Conversely, an adversary could seek to \emph{block adaptation}, injecting contradictory data points during a period of valid concept drift, in an attempt to nullify the adaptation process~\cite{Korycki_2022}.
 
-Finally, adversaries may seek \textit{control over the learned concept}, gradually forcing the system to learn a decision boundary favourable to the attacker’s goals. In this case, the detector is actively exploited as a mechanism for injecting the poisoned instances during adaptation cycles.
+Finally, adversaries may seek \emph{control over the learned concept}, gradually forcing the system to learn a decision boundary favourable to the attacker’s goals. In this case, the detector is actively exploited as a mechanism for injecting the poisoned instances during adaptation cycles.
 
 \subsection{Instance-Based Poisoning}
 Instance-based poisoning attacks are those in which an adversary injects or modifies individual data points in the stream to influence the base learner or drift detector. These attacks are powerful because the poisoned instances can be distributed over time, allowing adversaries to exploit both the learner’s update behaviours and the detector’s temporal assumptions. For example, poisoned samples may be injected intermittently or gradually, ensuring that individual instances appear benign while the cumulative effect leads to performance degradation or detector manipulation.
@@ -234,7 +234,7 @@ Once the embedding network is trained, it is used to fit a Nearest Class Mean (N
 \begin{equation} \label{eq:ncm-prototype}
     \bm{h}_c = \frac{1}{n_c} \sum_{i}\left[y_i=c\right] \mathbf{h}_i,
 \end{equation}
-where $n_c$ is the number of training samples observed for class $c$; this $\bm{h}_c$ is the full-data counterpart of the per-batch prototype $v_k$ in \cref{eq:ncm-contrastive}, both being the latent-space centroid of a class. The assigned class for an incoming sample with embedding $\mathbf{h}_j$ is the one minimising a hybrid distance,
+where $n_c$ is the number of training samples observed for class $c$; this $\bm{h}_c$ is the full-data counterpart of the per-batch prototype $v_k$ in~\cref{eq:ncm-contrastive}, both being the latent-space centroid of a class. The assigned class for an incoming sample with embedding $\mathbf{h}_j$ is the one minimising a hybrid distance,
 \begin{align}
     c_j^* &= \underset{c\in C}{\arg\min}\,D(\mathbf{h}_j, \bm{h}_c), \label{eq:ncm-classification}\\
     D(\mathbf{h}_j, \bm{h}_c) &= d_R(\mathbf{h}_j, \bm{h}_c) + \lambda_1(d_E(\mathbf{h}_j, \bm{h}_c)), \label{eq:hybrid-distance}
@@ -247,7 +247,7 @@ The same hybrid distance is also used to identify drifted samples. A sample is t
 \begin{equation} \label{eq:drift-rule}
     \min_{c \in C} D(\mathbf{h}_j, \bm{h}_c) > T_{drift},
 \end{equation}
-where $D$ is the hybrid distance of \cref{eq:hybrid-distance} and $C$ is the set of known class indices. Kuppa and Le-Khac~\cite{Kuppa_2022} do not formally specify how $T_{drift}$ should be derived. We describe the calibration procedure adopted in this thesis in~\cref{ch:implementation}.
+where $D$ is the hybrid distance of~\cref{eq:hybrid-distance} and $C$ is the set of known class indices. Kuppa and Le-Khac~\cite{Kuppa_2022} do not formally specify how $T_{drift}$ should be derived. We describe the calibration procedure adopted in this thesis in~\cref{ch:implementation}.
 
 \subsubsection{Concept Discovery}
 \label{sec:concept_discovery}
@@ -260,7 +260,7 @@ Intuitively, $\delta_i^{t-1 \to t}$ is the displacement of each drifted embeddin
 \begin{equation} \label{eq:concept-threshold}
     \|\Delta_{drift}^{t \to t+1}\| > T,
 \end{equation}
-new mean class prototypes $h_{new,i}$ are registered, both the accumulator and buffer are reset, and the autoencoder is retrained on new data that includes the newly identified class. The paper does not specify how past concepts in the dataset are maintained under bounded memory across retraining cycles. A natural choice, following the rehearsal principles in \cref{sec:exemplar memory}, is to represent each registered class by a fixed-size exemplar set selected via herding (\cref{eq:herding}); we adopt this in \cref{ch:implementation}.
+new mean class prototypes $h_{new,i}$ are registered, both the accumulator and buffer are reset, and the autoencoder is retrained on new data that includes the newly identified class. The paper does not specify how past concepts in the dataset are maintained under bounded memory across retraining cycles. A natural choice, following the rehearsal principles in~\cref{sec:exemplar memory}, is to represent each registered class by a fixed-size exemplar set selected via herding (\cref{eq:herding}); we adopt this in~\cref{ch:implementation}.
 
 \subsubsection{Operational Protocol}
-The detector therefore both decides when adaptation is required (via the drift threshold $T_{drift}$ and the concept discovery threshold $T$) and identifies which incoming samples were candidate evidence for that adaptation (via the concept-discovery buffer). What is not specified by Kuppa and Le-Khac~\cite{Kuppa_2022} is how this adaptation interacts with any downstream classifier, nor how the candidate evidence should be combined with retained known-class data when the encoder is retrained. We return to these architectural questions in \cref{ch:target_system_threat_model,ch:implementation}.
+The detector therefore both decides when adaptation is required (via the drift threshold $T_{drift}$ and the concept discovery threshold $T$) and identifies which incoming samples were candidate evidence for that adaptation (via the concept-discovery buffer). What is not specified by Kuppa and Le-Khac~\cite{Kuppa_2022} is how this adaptation interacts with any downstream classifier, nor how the candidate evidence should be combined with retained known-class data when the encoder is retrained. We return to these architectural questions in~\cref{ch:target_system_threat_model,ch:implementation}.

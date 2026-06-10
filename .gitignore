@@ -82,3 +82,5 @@ Learn to adapt: Robust drift detection in security domain.pdf
 *.synctex.gz
 *.tdo
 PLAN.md
+.log
+temp/

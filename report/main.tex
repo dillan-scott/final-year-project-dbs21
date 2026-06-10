@@ -35,12 +35,12 @@
 \input{title/title.tex}
 
 \begin{abstract}
-Adaptive intrusion-detection systems pair a drift detector with a base learner that retrains whenever the detector registers a new concept. The Contrastive NCM detector of Kuppa and Le-Khac couples a contrastive autoencoder to a nearest-class-mean classifier and is reported to be adversarially robust --- but only as a stand-alone detector. We evaluate it as it would be deployed: coupled to a downstream classifier whose retraining it triggers, on the Engelen-corrected CICIDS2017 stream. We find that the coupling, not the representation, is the exploitable surface, and that the adversary's leverage is over the system's adaptation rather than its decision boundary. An aimed feature-space mean-shift forces a spurious concept-discovery event both white-box and grey-box --- retaining roughly $70\%$ of its effect against a detector trained on disjoint data --- because the batch-mean statistic the detector adopts for stability transfers far better than the per-sample detection it is built on. A firing gate added to stop premature retraining is double-edged: an ablation proves that any constraint on the retraining buffer's makeup that resists this forcing simultaneously lets an attacker suppress adaptation by dilution, starving the system of the updates it needs. A base learner retrained correctly resists low-rate poisoning of its decision boundary, yet the detector silently fails to discover one of two novel attack classes because it embeds too close to a known one. Coupling a robust detector to a base learner does not inherit its robustness; it creates new timing- and composition-based attack surfaces that a detector-only evaluation cannot see.
+Adaptive intrusion-detection systems pair a drift detector with a base learner that retrains whenever the detector identifies a shift in the incoming data's distribution. The Contrastive NCM detector of Kuppa and Le-Khac employs a contrastive autoencoder and a Nearest-Class-Mean classifier and is reported to be adversarially robust -- but only as a stand-alone detector. We evaluate it as it would be deployed: coupled to a downstream classifier whose retraining it triggers. We find that the coupling introduces exploitable surfaces, and that the adversary's leverage is over the system's adaptation rather than its decision boundary. An aimed feature-space mean-shift forces an erroneous concept-discovery event both white-box and grey-box; retaining roughly $70\%$ of its effect against a detector trained on disjoint data, because the batch-mean statistic the detector adopts for stability transfers far better than the per-sample detection it is built on. A firing gate added to stop premature and forced retraining is double-edged. An ablation proves that any constraint on the retraining buffer's makeup that resists this forcing simultaneously lets an attacker suppress adaptation by dilution, starving the system of the updates it needs. The base learner resists low-rate poisoning of its decision boundary, yet the detector silently fails to discover one of two novel attack classes because it embeds too close to a known one. Coupling a robust detector to a base learner does not neccessarily mean the system will inherit the detector's robustness; it creates new attack surfaces that a detector-only evaluation simply cannot see.
 \end{abstract}
 
 \tableofcontents
-\listoffigures
-\listoftables
+% \listoffigures
+% \listoftables
 \listoftodos
 
 \input{introduction/introduction.tex}
@@ -50,9 +50,10 @@ Adaptive intrusion-detection systems pair a drift detector with a base learner t
 \input{implementation/implementation.tex}
 \input{evaluation/evaluation.tex}
 \input{conclusion/conclusion.tex}
-\input{extras/ethics.tex}
 
 \bibliographystyle{vancouver}
 \bibliography{bibs/main}
+
+\input{extras/declarations.tex}
 
 \end{document}

@@ -1,0 +1,27 @@
+\begin{table}
+\caption{RQ3 attack comparison: suppress and force-false modes on the adaptive-DD coupled IDS. Friday end-of-stream metrics, mean $\pm$ std across 3 seeds.}
+\label{tab:rq3-attack-comparison}
+\begin{tabular}{lllllll}
+\toprule
+ &  & Fri F1 & Fri FNR DoS & Fri FNR PortScan & Fri DD drift pool & n DD retrains \\
+Mode & Poison \% &  &  &  &  &  \\
+\midrule
+Suppress & 0\% & 0.807 $\pm$ 0.103 & 0.019 $\pm$ 0.001 & 0.562 $\pm$ 0.333 & 0.170 $\pm$ 0.213 & 2.000 $\pm$ 0.000 \\
+\cline{1-7}
+Force-false & 0\% & 0.867 $\pm$ 0.052 & 0.013 $\pm$ 0.001 & 0.372 $\pm$ 0.233 & 0.305 $\pm$ 0.111 & 2.000 $\pm$ 0.000 \\
+\cline{1-7}
+Suppress & 5\% & 0.726 $\pm$ 0.034 & 0.014 $\pm$ 0.006 & 0.903 $\pm$ 0.137 & 0.151 $\pm$ 0.085 & 1.333 $\pm$ 0.471 \\
+\cline{1-7}
+Force-false & 5\% & 0.727 $\pm$ 0.026 & 0.030 $\pm$ 0.001 & 0.884 $\pm$ 0.102 & 0.265 $\pm$ 0.167 & 1.667 $\pm$ 0.471 \\
+\cline{1-7}
+Suppress & 20\% & 0.714 $\pm$ 0.011 & 0.012 $\pm$ 0.011 & 0.955 $\pm$ 0.064 & 0.033 $\pm$ 0.007 & 1.333 $\pm$ 0.471 \\
+\cline{1-7}
+Force-false & 20\% & 0.727 $\pm$ 0.059 & 0.039 $\pm$ 0.005 & 0.870 $\pm$ 0.183 & 0.052 $\pm$ 0.034 & 1.333 $\pm$ 0.471 \\
+\cline{1-7}
+Suppress & 35\% & 0.781 $\pm$ 0.068 & 0.026 $\pm$ 0.013 & 0.662 $\pm$ 0.273 & 0.135 $\pm$ 0.066 & 1.667 $\pm$ 0.471 \\
+\cline{1-7}
+Force-false & 35\% & 0.803 $\pm$ 0.040 & 0.041 $\pm$ 0.005 & 0.552 $\pm$ 0.147 & 0.116 $\pm$ 0.064 & 2.000 $\pm$ 0.000 \\
+\cline{1-7}
+\bottomrule
+\end{tabular}
+\end{table}

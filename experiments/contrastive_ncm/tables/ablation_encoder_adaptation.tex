@@ -1,0 +1,18 @@
+\begin{table}
+\caption{Ablation: full system (AdaptiveDD) vs static-encoder posture (StaticDD) under the same label-flipping attack. Friday end-of-stream metrics, mean $\pm$ std across 3 seeds.}
+\label{tab:ablation-encoder}
+\begin{tabular}{lllll}
+\toprule
+ & Fri F1 (AdaptiveDD) & Fri F1 (StaticDD) & Fri FNR DoS (AdaptiveDD) & Fri FNR DoS (StaticDD) \\
+Poison \% &  &  &  &  \\
+\midrule
+0\% & 0.807 $\pm$ 0.103 & 0.700 $\pm$ 0.001 & 0.019 $\pm$ 0.001 & 0.018 $\pm$ 0.002 \\
+5\% & 0.726 $\pm$ 0.034 & 0.651 $\pm$ 0.074 & 0.014 $\pm$ 0.006 & 0.118 $\pm$ 0.161 \\
+15\% & 0.820 $\pm$ 0.053 & 0.703 $\pm$ 0.002 & 0.030 $\pm$ 0.003 & 0.005 $\pm$ 0.001 \\
+20\% & 0.821 $\pm$ 0.053 & 0.704 $\pm$ 0.001 & 0.033 $\pm$ 0.002 & 0.004 $\pm$ 0.001 \\
+25\% & 0.207 $\pm$ 0.000 & 0.207 $\pm$ 0.000 & 0.881 $\pm$ 0.000 & 0.881 $\pm$ 0.000 \\
+30\% & 0.680 $\pm$ 0.006 & 0.306 $\pm$ 0.048 & 0.055 $\pm$ 0.011 & 0.740 $\pm$ 0.067 \\
+35\% & 0.702 $\pm$ 0.001 & 0.699 $\pm$ 0.003 & 0.006 $\pm$ 0.001 & 0.005 $\pm$ 0.001 \\
+\bottomrule
+\end{tabular}
+\end{table}

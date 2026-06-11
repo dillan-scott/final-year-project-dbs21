@@ -1,0 +1,16 @@
+\begin{table}
+\caption{Baseline (no attack) per-day metrics for the static reference, static-encoder ablation, and the full system (AdaptiveDAdaptiveM). F1 bench measures M against the fixed novel-class-aware benchmark; F1 stream measures M against the day's actual stream traffic.}
+\label{tab:baseline-adaptation}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & F1 bench (StaticStatic) & F1 stream (StaticStatic) & F1 bench (StaticDD) & F1 stream (StaticDD) & F1 bench (AdaptiveDD) & F1 stream (AdaptiveDD) & DD drift pool & M retrains (Adapt) & DD retrains (Adapt) \\
+Day &  &  &  &  &  &  &  &  &  \\
+\midrule
+Mon & 0.207 & 0.000 & 0.207 & 0.000 & 0.207 & 0.000 & 0.306 & 0 & 0 \\
+Tue & 0.207 & 0.682 & 0.207 & 0.682 & 0.207 & 0.682 & 0.306 & 0 & 0 \\
+Wed & 0.207 & 0.219 & 0.344 & 0.405 & 0.346 & 0.402 & 0.228 & 1 & 1 \\
+Thu & 0.207 & 0.404 & 0.698 & 0.283 & 0.710 & 0.229 & 0.026 & 0 & 0 \\
+Fri & 0.207 & 0.170 & 0.698 & 0.163 & 0.710 & 0.192 & 0.026 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}

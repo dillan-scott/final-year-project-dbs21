@@ -1,0 +1,19 @@
+\begin{table}
+\caption{Force-false via manufactured novelty injected in the pre-drift window (before the first genuine novel class). True-label injection passes the composition gate and forces early adaptation; the flipped-label (poison) payload is blocked by the same gate. Friday end-of-stream, mean $\pm$ std across 3 seeds.}
+\label{tab:rq3-force-false-prewindow}
+\begin{tabular}{lllllll}
+\toprule
+ &  & Pre-drift fires & Total DD retrains & Fri F1 & Fri FNR DoS & Fri FNR PortScan \\
+Variant & p &  &  &  &  &  \\
+\midrule
+\multirow[t]{3}{*}{true\_label} & 5\% & 0.000 $\pm$ 0.000 & 2.000 $\pm$ 0.000 & 0.791 $\pm$ 0.102 & 0.013 $\pm$ 0.002 & 0.627 $\pm$ 0.264 \\
+ & 20\% & 0.000 $\pm$ 0.000 & 2.000 $\pm$ 0.000 & 0.809 $\pm$ 0.106 & 0.015 $\pm$ 0.001 & 0.545 $\pm$ 0.331 \\
+ & 35\% & 1.000 $\pm$ 0.816 & 2.333 $\pm$ 0.943 & 0.929 $\pm$ 0.018 & 0.005 $\pm$ 0.004 & 0.060 $\pm$ 0.078 \\
+\cline{1-7}
+\multirow[t]{3}{*}{flipped\_label} & 5\% & 0.000 $\pm$ 0.000 & 1.667 $\pm$ 0.471 & 0.764 $\pm$ 0.111 & 0.024 $\pm$ 0.003 & 0.731 $\pm$ 0.380 \\
+ & 20\% & 0.000 $\pm$ 0.000 & 2.667 $\pm$ 0.471 & 0.780 $\pm$ 0.031 & 0.028 $\pm$ 0.007 & 0.696 $\pm$ 0.097 \\
+ & 35\% & 0.000 $\pm$ 0.000 & 2.000 $\pm$ 0.000 & 0.836 $\pm$ 0.112 & 0.020 $\pm$ 0.004 & 0.501 $\pm$ 0.353 \\
+\cline{1-7}
+\bottomrule
+\end{tabular}
+\end{table}

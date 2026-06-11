@@ -1,0 +1,14 @@
+\begin{table}
+\caption{End-to-end false positive: injecting PGD-perturbed known-class flows in the pre-drift window forces a spurious concept-discovery fire on an unchanged distribution, whereas unperturbed known flows do not. Static-DD coupled system, injection rate 0.20.}
+\label{tab:rq3-pgd-end-to-end}
+\begin{tabular}{lrrl}
+\toprule
+ & Pre-drift fires & Total M retrains & Fri F1 \\
+Injected pool &  &  &  \\
+\midrule
+clean known (control) & 0 & 1 & 0.970 \\
+PGD white-box & 0 & 1 & 0.748 \\
+PGD surrogate->victim & 0 & 1 & 0.730 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,17 @@
+\begin{table}
+\caption{PGD false-positive attack on the Contrastive-NCM drift detector: fraction of perturbed known-class samples the victim flags as drifted, versus the L-infinity perturbation budget eps. White-box perturbs the victim directly; grey-box perturbs a disjoint surrogate -- trained on a held-out 40 percent of the known-class pool, with no training flows shared with the victim -- and transfers to the victim (mean and std over three surrogate seeds).}
+\label{tab:rq3-pgd-false-positive}
+\begin{tabular}{llll}
+\toprule
+ & White-box flag & Grey-box flag (mean) & Grey-box flag (std) \\
+eps &  &  &  \\
+\midrule
+0.000000 & 0.103 & 0.103 & 0.000 \\
+0.100000 & 0.286 & 0.167 & 0.007 \\
+0.250000 & 0.858 & 0.244 & 0.037 \\
+0.500000 & 0.998 & 0.322 & 0.061 \\
+1.000000 & 0.997 & 0.418 & 0.078 \\
+2.000000 & 1.000 & 0.599 & 0.134 \\
+\bottomrule
+\end{tabular}
+\end{table}

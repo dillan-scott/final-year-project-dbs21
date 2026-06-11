@@ -1,0 +1,16 @@
+\begin{table}
+\caption{Accumulator-targeting PGD. Two pools of known-class flows are perturbed in opposite latent directions; the displacement between consecutive drifted-batch means is compared to the concept threshold T. A concept-discovery fire is forced only if the displacement exceeds T.}
+\label{tab:rq3-pgd-accumulator}
+\begin{tabular}{lllllr}
+\toprule
+ & flag A & flag B & disp ||mean(B)-mean(A)|| & T & forces fire? \\
+eps &  &  &  &  &  \\
+\midrule
+0.100000 & 0.10 & 0.11 & 5.3 & 39.3 & False \\
+0.250000 & 0.12 & 0.13 & 6.8 & 39.3 & False \\
+0.500000 & 0.16 & 0.16 & 12.0 & 39.3 & False \\
+1.000000 & 0.94 & 0.50 & 14.7 & 39.3 & False \\
+2.000000 & 1.00 & 1.00 & 29.5 & 39.3 & False \\
+\bottomrule
+\end{tabular}
+\end{table}

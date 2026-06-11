@@ -1,0 +1,16 @@
+\begin{table}
+\caption{Grey-box mean-shift transfer. Two pools are optimised against a disjoint surrogate (trained on a held-out 40 percent of the known-class pool, with no flows shared with the victim) and the displacement of their drifted-batch means is measured on the victim. Reported are the mean and std of the transferred displacement over three surrogate seeds and the number of seeds whose transfer forces a victim concept-discovery fire. A fire requires the displacement to exceed T (compare the white-box mean-shift, tab:rq3-pgd-meanshift).}
+\label{tab:rq3-pgd-meanshift-greybox}
+\begin{tabular}{lllll}
+\toprule
+ & disp mean & disp std & seeds forcing fire & T \\
+eps &  &  &  &  \\
+\midrule
+0.100000 & 11.1 & 0.7 & 0/3 & 39.3 \\
+0.250000 & 18.3 & 1.1 & 0/3 & 39.3 \\
+0.500000 & 20.7 & 1.6 & 0/3 & 39.3 \\
+1.000000 & 33.1 & 2.0 & 0/3 & 39.3 \\
+2.000000 & 65.0 & 3.8 & 3/3 & 39.3 \\
+\bottomrule
+\end{tabular}
+\end{table}

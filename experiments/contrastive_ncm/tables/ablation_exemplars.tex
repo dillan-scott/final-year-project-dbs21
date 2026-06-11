@@ -1,0 +1,18 @@
+\begin{table}
+\caption{Ablation: effect of disabling iCaRL-style accumulating novel exemplars on attack outcomes. Friday end-of-stream metrics, mean $\pm$ std across 3 seeds.}
+\label{tab:ablation-exemplars}
+\begin{tabular}{lllll}
+\toprule
+ & Fri F1 (with accum) & Fri F1 (no accum) & Fri FNR DoS (with) & Fri FNR DoS (without) \\
+Poison \% &  &  &  &  \\
+\midrule
+0\% & 0.807 $\pm$ 0.103 & 0.804 $\pm$ 0.069 & 0.019 $\pm$ 0.001 & 0.141 $\pm$ 0.098 \\
+5\% & 0.726 $\pm$ 0.034 & 0.701 $\pm$ 0.005 & 0.014 $\pm$ 0.006 & 0.008 $\pm$ 0.006 \\
+15\% & 0.820 $\pm$ 0.053 & 0.763 $\pm$ 0.084 & 0.030 $\pm$ 0.003 & 0.026 $\pm$ 0.030 \\
+20\% & 0.821 $\pm$ 0.053 & 0.845 $\pm$ 0.047 & 0.033 $\pm$ 0.002 & 0.040 $\pm$ 0.003 \\
+25\% & 0.207 $\pm$ 0.000 & 0.207 $\pm$ 0.000 & 0.881 $\pm$ 0.000 & 0.881 $\pm$ 0.000 \\
+30\% & 0.680 $\pm$ 0.006 & 0.662 $\pm$ 0.018 & 0.055 $\pm$ 0.011 & 0.084 $\pm$ 0.045 \\
+35\% & 0.702 $\pm$ 0.001 & 0.719 $\pm$ 0.021 & 0.006 $\pm$ 0.001 & 0.012 $\pm$ 0.011 \\
+\bottomrule
+\end{tabular}
+\end{table}

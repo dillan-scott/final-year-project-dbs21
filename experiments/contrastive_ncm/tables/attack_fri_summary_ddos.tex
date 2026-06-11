@@ -1,0 +1,19 @@
+\begin{table}
+\caption{Friday end-of-stream attack effect on the coupled adaptive IDS. Values are mean $\pm$ std across 1 seeds.}
+\label{tab:attack-fri-summary-ddos}
+\begin{tabular}{llllll}
+\toprule
+ & Poison \% & Fri F1 & Fri FNR DoS & Fri FNR DDoS & Retrains \\
+System &  &  &  &  &  \\
+\midrule
+Static M & ref & 0.471 $\pm$ 0.000 & 0.626 $\pm$ 0.000 & 0.000 $\pm$ 0.000 & 0 \\
+Coupled (p=0) & 0\% & 0.960 $\pm$ 0.000 & 0.067 $\pm$ 0.000 & 0.327 $\pm$ 0.000 & 15 \\
+Coupled p=5\% & 5\% & 0.391 $\pm$ 0.000 & 0.926 $\pm$ 0.000 & 0.037 $\pm$ 0.000 & 31$\pm$0 \\
+Coupled p=15\% & 15\% & 0.159 $\pm$ 0.000 & 0.999 $\pm$ 0.000 & 0.002 $\pm$ 0.000 & 3$\pm$0 \\
+Coupled p=20\% & 20\% & 0.596 $\pm$ 0.000 & 0.550 $\pm$ 0.000 & 0.000 $\pm$ 0.000 & 2$\pm$0 \\
+Coupled p=25\% & 25\% & 0.553 $\pm$ 0.000 & 0.579 $\pm$ 0.000 & 0.000 $\pm$ 0.000 & 2$\pm$0 \\
+Coupled p=30\% & 30\% & 0.157 $\pm$ 0.000 & 0.971 $\pm$ 0.000 & 0.227 $\pm$ 0.000 & 15$\pm$0 \\
+Coupled p=35\% & 35\% & 0.557 $\pm$ 0.000 & 0.575 $\pm$ 0.000 & 0.000 $\pm$ 0.000 & 2$\pm$0 \\
+\bottomrule
+\end{tabular}
+\end{table}

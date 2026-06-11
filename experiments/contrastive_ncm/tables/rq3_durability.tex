@@ -1,0 +1,14 @@
+\begin{table}
+\caption{Durability of a poisoning payload. Poisoning only the early stream and then injecting nothing leaves the Friday DoS false-negative rate close to the sustained-poison level rather than recovering to the clean baseline, indicating the payload persists in the exemplar memory across later clean retraining events. Static-DD coupled system; mean over seeds.}
+\label{tab:rq3-durability}
+\begin{tabular}{lll}
+\toprule
+ & Fri FNR DoS & M retrains \\
+Condition &  &  \\
+\midrule
+clean baseline & 0.017 $\pm$ 0.002 & 3.000 $\pm$ 0.000 \\
+sustained poison & 0.120 $\pm$ 0.164 & 1.667 $\pm$ 0.943 \\
+poison early, then clean & 0.024 $\pm$ 0.026 & 1.667 $\pm$ 0.943 \\
+\bottomrule
+\end{tabular}
+\end{table}

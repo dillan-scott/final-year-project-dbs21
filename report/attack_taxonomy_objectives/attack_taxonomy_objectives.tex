@@ -18,7 +18,7 @@ The composition channel governs \emph{what data} the rebuilt models are trained 
 
 These two channels are exhaustive for the threat model of~\cref{sec:attacker_capabilities}. That is, an adversary restricted to injecting stream data can influence the coupled system only by changing whether a retraining event fires (the trigger channel) or which data that event consumes (the composition channel). The classical adversarial-learning primitives are not discarded by this view; each can be seen as an action on one of the two channels, as summarised in~\cref{tab:axt-primitive-channel}. We use \emph{evasion} to refer to attacks that change a decision without altering model weights, \emph{poisoning} for attacks that corrupt a model through its training data, and \emph{backdooring} for targeted poisoning that implants a hidden, trigger-activated behaviour. The trigger channel is therefore attacked by \emph{evasion} alone, while \emph{poisoning} and \emph{backdooring}, whether aimed at $\mathcal{D}$ or $\mathcal{M}$, act through the composition channel, since model weights change only at a rebuild. Because $\mathcal{D}$ and $\mathcal{M}$ are rebuilt from the same buffer, a single composition attack can corrupt both at once.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \caption{The classical adversarial-learning primitives, recast as actions on the two channels exposed by the coupling layer. Organising by channel (rather than by target component) foregrounds the attack surface that the coupling actually exposes.}
@@ -118,7 +118,7 @@ This chapter organised the attack space around the coupling rather than the syst
 
 This taxonomy spans the full coupling-layer attack space. This thesis evaluates a focused subset of it, chosen to characterise the two channels rather than to demonstrate every cell.~\cref{tab:axt-scope} maps each evaluated attack to the channel and sub-surface it tests and to the research question under which it is examined. The remaining attacks are identified as future work. Throughout, we hold to the framing established in~\cref{ch:target_system_threat_model}: these are attacks on the coupling, and where $\mathcal{D}$ itself is targeted (the feature-perturbation false positive) we say so explicitly.~\cref{ch:implementation} realises these attacks concretely.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \small
 \caption{The attacks evaluated in this thesis, located within the channel taxonomy. The selection characterises both coupling channels to some extent. Also identifies attacks left as future work (\cref{ch:conclusion}).}

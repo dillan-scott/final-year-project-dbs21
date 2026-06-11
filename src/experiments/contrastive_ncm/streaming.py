@@ -16,6 +16,18 @@ from .base_learner import (
 )
 from .training import calibrate_concept_threshold, build_known_exemplars
 
+_STREAM_VERBOSE = True
+
+
+def set_stream_verbose(enabled: bool = True) -> None:
+    global _STREAM_VERBOSE
+    _STREAM_VERBOSE = enabled
+
+
+def _vlog(*args, **kwargs) -> None:
+    if _STREAM_VERBOSE:
+        print(*args, **kwargs)
+
 
 @dataclass
 class BatchResult:
@@ -183,6 +195,19 @@ class StaticDAdaptiveM:
         self.novel_y: np.ndarray | None = None
         self.retrain_count = 0
 
+    def _rebuild_base_learner(
+        self, X_ret_bin: np.ndarray, y_ret_bin: np.ndarray, epochs: int = 100
+    ) -> None:
+        """Rebuild M from scratch on the retrain set, mirroring the initial recipe."""
+        for module in self.base_learner.modules():
+            if hasattr(module, "reset_parameters"):
+                module.reset_parameters()
+        n_cls = np.bincount(y_ret_bin.astype(np.int64), minlength=2)
+        class_weight = (n_cls.max() / np.clip(n_cls, 1, None)).astype(np.float32)
+        train_base_learner(
+            self.base_learner, X_ret_bin, y_ret_bin, epochs=epochs, class_weight=class_weight
+        )
+
     def process_batch(
         self,
         batch_idx: int,
@@ -220,13 +245,25 @@ class StaticDAdaptiveM:
                 if self.detector.update_with_batch_drifted(z_sub, allow_fire=allow_fire):
                     concepts_found += 1
 
+        # Gate-state trace: which of the three firing conditions is binding this
+        # batch. delta_norm is the telescoping displacement accumulator (reset to
+        # None on a fire, so reads 0 on firing batches); compared against concept_T.
+        _da = self.detector._delta_accumulated
+        gate_trace = {
+            "n_attack_in_buf": int(n_attack_in_buf),
+            "attack_frac": float(attack_frac),
+            "allow_fire": bool(allow_fire),
+            "delta_norm": float(torch.norm(_da)) if _da is not None else 0.0,
+            "concept_T": float(self.detector.concept_threshold),
+        }
+
         retrain_fired = False
         if concepts_found > 0:
             X_buf = np.vstack(concept_buf.X_buf)
             y_buf = np.concatenate(concept_buf.y_buf)
             n_attack = int((y_buf == 1).sum())
             n_benign = int((y_buf == 0).sum())
-            print(
+            _vlog(
                 f"  [FIRE {type(self).__name__}] "
                 f"batch={batch_idx} day={int(round(float(day_b.mean())))} "
                 f"buf={len(y_buf)} attack={n_attack} benign={n_benign} "
@@ -260,8 +297,7 @@ class StaticDAdaptiveM:
                 parts_y.append(self.novel_y)
             X_ret = np.vstack(parts_X)
             y_ret = np.concatenate(parts_y)
-            self.base_learner.load_state_dict(copy.deepcopy(self.m_init_state))
-            train_base_learner(self.base_learner, X_ret, y_ret)
+            self._rebuild_base_learner(X_ret, y_ret)
             concept_buf.reset()
             self.retrain_count += 1
             retrain_fired = True
@@ -275,7 +311,7 @@ class StaticDAdaptiveM:
             n_poisoned=n_poisoned,
             buf_size=concept_buf.size,
             metrics=m,
-            extras_extra=stream_m,
+            extras_extra={**stream_m, **gate_trace},
         )
 
 
@@ -309,7 +345,7 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
         X_dd_eval_pool: np.ndarray,
         per_class_masks: Mapping[str, np.ndarray] | None = None,
         concept_batch: int = 256,
-        dd_retrain_epochs: int = 100,
+        dd_retrain_epochs: int = 300,
         dd_retrain_lr: float = 1e-4,
         dd_retrain_batch: int = 4096,
         X_cal: np.ndarray | None = None,
@@ -380,13 +416,25 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
                 if self.detector.update_with_batch_drifted(z_sub, allow_fire=allow_fire):
                     concepts_found += 1
 
+        # Gate-state trace: which of the three firing conditions is binding this
+        # batch. delta_norm is the telescoping displacement accumulator (reset to
+        # None on a fire, so reads 0 on firing batches); compared against concept_T.
+        _da = self.detector._delta_accumulated
+        gate_trace = {
+            "n_attack_in_buf": int(n_attack_in_buf),
+            "attack_frac": float(attack_frac),
+            "allow_fire": bool(allow_fire),
+            "delta_norm": float(torch.norm(_da)) if _da is not None else 0.0,
+            "concept_T": float(self.detector.concept_threshold),
+        }
+
         retrain_fired = False
         if concepts_found > 0:
             X_buf = np.vstack(concept_buf.X_buf)
             y_buf = np.concatenate(concept_buf.y_buf)
             n_attack = int((y_buf == 1).sum())
             n_benign = int((y_buf == 0).sum())
-            print(
+            _vlog(
                 f"  [FIRE {type(self).__name__}] "
                 f"batch={batch_idx} day={int(round(float(day_b.mean())))} "
                 f"buf={len(y_buf)} attack={n_attack} benign={n_benign} "
@@ -432,8 +480,7 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
                 parts_y_bin.append(self.novel_y)
             X_ret_bin = np.vstack(parts_X_bin)
             y_ret_bin = np.concatenate(parts_y_bin)
-            self.base_learner.load_state_dict(copy.deepcopy(self.m_init_state))
-            train_base_learner(self.base_learner, X_ret_bin, y_ret_bin)
+            self._rebuild_base_learner(X_ret_bin, y_ret_bin)
 
             latest_new_proto_idx = self.detector.ncm.num_classes - 1
             if len(X_buf) > self.DD_RETRAIN_BUF_MAX:
@@ -453,7 +500,7 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
                 parts_y_mc.append(self.novel_y_mc)
             X_ret_mc = np.vstack(parts_X_mc)
             y_ret_mc = np.concatenate(parts_y_mc)
-            print(
+            _vlog(
                 f"  [DD retrain set] buf={len(X_buf_dd):,} (capped from {len(X_buf):,})  "
                 f"ex={len(X_ex_tile):,} ({self.DD_RETRAIN_EX_REPEATS}x)  "
                 f"novel={len(self.novel_X) if self.novel_X is not None else 0}"
@@ -487,7 +534,7 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
             T_floor = 2.0 * self.detector.drift_threshold
             if T_raw < T_floor:
                 self.detector.concept_threshold = T_floor
-            print(
+            _vlog(
                 f"  [T recalibrated on {cal_label}] {T_old:.3f} -> "
                 f"{self.detector.concept_threshold:.3f} (raw {T_raw:.3f}, "
                 f"floor {T_floor:.3f})"
@@ -503,6 +550,7 @@ class AdaptiveDAdaptiveM(StaticDAdaptiveM):
             "dd_drift_rate_pool": dd_drift_rate_pool,
             "n_dd_retrains": self.n_dd_retrains,
             "n_prototypes": int(self.detector.ncm.num_classes),
+            **gate_trace,
             **stream_m,
         }
         return BatchResult.from_metrics(

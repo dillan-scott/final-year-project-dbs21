@@ -20,6 +20,7 @@ from .streaming import (
     AdaptiveDAdaptiveM,
     run_stream,
     fresh_system,
+    set_stream_verbose,
 )
 from .training import (
     InitialTrainingResult,
@@ -33,6 +34,7 @@ from .paper_style import (
     save_fig,
     save_latex,
     agg,
+    set_progress,
 )
 
 __all__ = [
@@ -48,11 +50,12 @@ __all__ = [
     "GPULoader",
     "BatchResult",
     "ConceptBuffer",
-    "StaticDDStaticM",
-    "StaticDDAdaptiveM",
-    "AdaptiveDDAdaptiveM",
+    "StaticDStaticM",
+    "StaticDAdaptiveM",
+    "AdaptiveDAdaptiveM",
     "run_stream",
     "fresh_system",
+    "set_stream_verbose",
     "InitialTrainingResult",
     "initial_training",
     "calibrate_drift_threshold",
@@ -62,4 +65,5 @@ __all__ = [
     "save_fig",
     "save_latex",
     "agg",
+    "set_progress",
 ]

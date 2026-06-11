@@ -41,6 +41,7 @@ def train_base_learner(
     batch_size: int = M_BATCH_DEFAULT,
     class_weight: np.ndarray | None = None,
     device: torch.device | str | None = None,
+    loss_log_every: int = 20,
 ) -> None:
     """Train M from scratch (or continue training) on (X, y) with cross-entropy."""
     dev = torch.device(device) if device is not None else next(model.parameters()).device
@@ -51,13 +52,19 @@ def train_base_learner(
     w = (torch.tensor(class_weight, dtype=torch.float32, device=dev)
          if class_weight is not None else None)
     ce = nn.CrossEntropyLoss(weight=w)
-    for _ in tqdm(range(epochs), leave=False):
+    for e in tqdm(range(epochs), leave=False):
         perm = torch.randperm(len(X_t), device=dev)
+        epoch_loss, n_batches = 0.0, 0
         for i in range(0, len(X_t), batch_size):
             b = perm[i:i + batch_size]
             opt.zero_grad()
-            ce(model(X_t[b]), y_t[b]).backward()
+            loss = ce(model(X_t[b]), y_t[b])
+            loss.backward()
             opt.step()
+            epoch_loss += float(loss.detach())
+            n_batches += 1
+        if loss_log_every and ((e + 1) % loss_log_every == 0 or (e + 1) == epochs):
+            print(f"    [M {e + 1}/{epochs}] loss={epoch_loss / max(n_batches, 1):.4f}")
     model.eval()
 
 

@@ -35,6 +35,9 @@ class ContrastiveNCMDetector:
         device: str | torch.device = "cpu",
     ):
         self.device = torch.device(device)
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.latent_dim = latent_dim
         self.autoencoder = DriftAutoencoder(input_dim, hidden_dim, latent_dim).to(self.device)
         self.ncm = NCMClassifier(lambda_1)
         self.drift_threshold = drift_threshold
@@ -163,9 +166,24 @@ class ContrastiveNCMDetector:
         data_loader: DataLoader,
         epochs: int = 300,
         lr: float = 0.0001,
+        from_scratch: bool = True,
     ) -> None:
-        """Retrain the autoencoder on updated data and refresh all NCM prototypes."""
+        """Retrain the autoencoder on updated data and refresh all NCM prototypes.
+
+        Following the paper ("the encoder network is re-trained with new training
+        data with the same loss function"), ``from_scratch=True`` re-initialises
+        the encoder weights before training rather than fine-tuning the current
+        ones, so each rebuild is a fresh fit on the accumulated data.
+        """
+        if from_scratch:
+            self._reset_autoencoder()
         self.fit(data_loader, epochs=epochs, lr=lr, num_classes=self.num_classes)
+
+    def _reset_autoencoder(self) -> None:
+        """Re-initialise all autoencoder weights to a fresh random state."""
+        for module in self.autoencoder.modules():
+            if hasattr(module, "reset_parameters"):
+                module.reset_parameters()
 
     def _reset_drift_buffer(self) -> None:
         self._drift_buffer = []

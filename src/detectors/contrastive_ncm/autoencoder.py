@@ -57,7 +57,9 @@ class PrototypeContrastiveLoss(nn.Module):
         self.num_classes = num_classes
 
     def forward(self, h: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        num_classes = self.num_classes if self.num_classes is not None else int(labels.max().item()) + 1
+        num_classes = (
+            self.num_classes if self.num_classes is not None else int(labels.max().item()) + 1
+        )
 
         one_hot = torch.zeros(h.shape[0], num_classes, device=h.device)
         one_hot.scatter_(1, labels.unsqueeze(1), 1.0)
@@ -84,19 +86,24 @@ def train_contrastive_autoencoder(
     tqdm_position: int = 0,
     desc_prefix: str = "",
     disable_tqdm: bool = False,
+    loss_log_every: int = 20,
 ) -> float:
 
     device = next(model.parameters()).device
-    model = torch.compile(model)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     mse_loss_fn = nn.MSELoss()
     contrastive_loss_fn = PrototypeContrastiveLoss(temperature=temperature, num_classes=num_classes)
 
     model.train()
     total_loss = 0.0
-    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Contrastive", position=tqdm_position,
-                leave=True, disable=disable_tqdm)
-    for _ in pbar:
+    pbar = tqdm(
+        range(epochs),
+        desc=f"{desc_prefix}Contrastive",
+        position=tqdm_position,
+        leave=True,
+        disable=disable_tqdm,
+    )
+    for e in pbar:
         epoch_loss = torch.tensor(0.0, device=device)
 
         for x, labels in data_loader:
@@ -118,6 +125,8 @@ def train_contrastive_autoencoder(
         epoch_loss_val = epoch_loss.item() / len(data_loader)
         total_loss += epoch_loss_val
         pbar.set_postfix(loss=f"{epoch_loss_val:.4f}")
+        if loss_log_every and ((e + 1) % loss_log_every == 0 or (e + 1) == epochs):
+            print(f"    [{desc_prefix}Contrastive {e + 1}/{epochs}] loss={epoch_loss_val:.4f}")
 
     return total_loss / epochs
 
@@ -130,18 +139,23 @@ def train_plain_autoencoder(
     tqdm_position: int = 1,
     desc_prefix: str = "",
     disable_tqdm: bool = False,
+    loss_log_every: int = 20,
 ) -> float:
     """Train the autoencoder with MSE reconstruction loss only (no contrastive term)."""
     device = next(model.parameters()).device
-    model = torch.compile(model)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     mse_loss_fn = nn.MSELoss()
 
     model.train()
     total_loss = 0.0
-    pbar = tqdm(range(epochs), desc=f"{desc_prefix}Plain AE", position=tqdm_position,
-                leave=True, disable=disable_tqdm)
-    for _ in pbar:
+    pbar = tqdm(
+        range(epochs),
+        desc=f"{desc_prefix}Plain AE",
+        position=tqdm_position,
+        leave=True,
+        disable=disable_tqdm,
+    )
+    for e in pbar:
         epoch_loss = torch.tensor(0.0, device=device)
 
         for x, _ in data_loader:
@@ -160,5 +174,7 @@ def train_plain_autoencoder(
         epoch_loss_val = epoch_loss.item() / len(data_loader)
         total_loss += epoch_loss_val
         pbar.set_postfix(loss=f"{epoch_loss_val:.4f}")
+        if loss_log_every and ((e + 1) % loss_log_every == 0 or (e + 1) == epochs):
+            print(f"    [{desc_prefix}Plain AE {e + 1}/{epochs}] loss={epoch_loss_val:.4f}")
 
     return total_loss / epochs

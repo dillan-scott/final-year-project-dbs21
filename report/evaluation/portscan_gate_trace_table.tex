@@ -1,0 +1,14 @@
+\begin{table}[H]
+\centering
+\caption{Firing-gate state during the \texttt{PortScan} window of a clean, unattacked run (batch-wise range over the Friday stream). \texttt{PortScan} clears the count and displacement conditions on every batch but never reaches the $0.3$ fraction floor, so no concept-discovery event fires. The blind spot is therefore a property of the fraction floor, not of the detector's per-sample drift detection.}
+\label{tab:portscan-gate}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Firing condition & Floor & \texttt{PortScan} window & Satisfied? \\
+\midrule
+Displacement $\|\Delta\|$   & $T = 38.9$ & $43.2$--$53.5$   & Yes (every batch) \\
+Count (attack-labelled)     & $500$      & $1008$--$3367$   & Yes (every batch) \\
+Fraction                    & $0.30$     & $0.089$--$0.202$ & \textbf{No (never)} \\
+\bottomrule
+\end{tabular}
+\end{table}

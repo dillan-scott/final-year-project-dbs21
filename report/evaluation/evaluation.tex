@@ -23,12 +23,6 @@ Before introducing an adversary we confirm that, on an unpoisoned stream, the co
 
 \input{./evaluation/baseline_adaptation_table.tex}
 
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=\linewidth]{../experiments/contrastive_ncm/figures/rq2_streaming_timeseries.pdf}
-%     \caption{Per-batch stream $F_1$ and the \texttt{DoS} per-class false-negative rate over the week, baseline (no attack) versus a $5\%$ benign-labelled injection. Aggregate $F_1$ is barely moved while the per-class FNR is driven from near zero to $0.642$ --- the damage the headline metric conceals.}
-%     \label{fig:eval-rq2-ts}
-% \end{figure}
 \clearpage
 
 \section{RQ1 -- The Attack Surfaces of the Coupling}
@@ -48,7 +42,7 @@ Contrary to the hypothesis, a base learner retrained from scratch to convergence
 
 \input{./evaluation/rq2_attack_fri_summary_table.tex}
 
-So, the boundary cannot be moved against the genuine class, but it can be circumvented. The channel admits a backdoor, which succeeds precisely because it does not contend with the clean decision boundary. Rather than just mislabelling \texttt{DoS} as benign, the adversary also stamps them with a small feature-space trigger, teaching $\mathcal{M}$ that ``\texttt{DoS}-features $+$ trigger $\Rightarrow$ benign''. The trigger is inert on an un-poisoned learner -- it moves the \texttt{DoS} false-negative rate from $0.012$ to $0.014$ -- but after the backdoor is planted a \emph{triggered} \texttt{DoS} flow evades $\mathcal{M}$ with false-negative rate $0.69$, while \emph{clean} \texttt{DoS} is still caught (with false-negative rate $0.03$). The backdoor is also durable: the adversary injects only around the genuine mid-week fire and then stops, yet the backdoor persists regardless of any further retrains. This is because of all the harvested concept exemplars that carry the trigger being replayed into every subsequent rebuild -- the never-evict exemplar memory (\cref{sec:impl-retrain}) turned against the system. Here, the robust learner resists having its boundary moved, but not having a hidden shortcut installed beside it.
+So, the boundary cannot be moved against the genuine class, but it can be circumvented. The channel admits a backdoor, which succeeds precisely because it does not contend with the clean decision boundary. Rather than just mislabelling \texttt{DoS} as benign, the adversary also stamps them with a small feature-space trigger, teaching $\mathcal{M}$ that ``\texttt{DoS}-features $+$ trigger $\Rightarrow$ benign''. The trigger is inert on an un-poisoned learner -- it moves the \texttt{DoS} false-negative rate from $0.012$ to $0.014$ -- but after the backdoor is planted a \emph{triggered} \texttt{DoS} flow evades $\mathcal{M}$ with false-negative rate $0.69$, while \emph{clean} \texttt{DoS} is still caught (with false-negative rate $0.03$). The backdoor is also durable: the adversary injects only around the genuine mid-week fire and then stops, yet the backdoor persists regardless of any further retrains. This is because of all the harvested concept exemplars that carry the trigger being replayed into every subsequent rebuild -- the never-evict exemplar memory (\cref{sec:impl-retrain}) turned against the system. An ablation that disables this memory isolates its role (\cref{tab:rq2-backdoor}). With the harvested exemplars retained (accum=500) the triggered false-negative rate stays consistently high ($0.687 \pm 0.096$), whereas disabling them (accum=0) leaves the same mean ($0.679$) but makes persistence highly seed-dependent ($\pm 0.454$). Therefore, we can confirm that the never-evict memory is what makes the backdoor reliable over time. That is, without the replayed exemplars, whether a later clean rebuild washes the shortcut out is left to chance. Here, the robust learner resists having its boundary moved, but not having a hidden shortcut installed beside it.
 
 \input{./evaluation/rq2_backdoor_table.tex}
 
@@ -68,8 +62,6 @@ RQ2 resolves into a sharper claim than the hypothesis stated. The composition ch
 \subsection{Forcing Per-Sample Detection}
 \label{sec:eval-rq3-pgd}
 We separate two things that are easily conflated: making the detector \emph{flag} a sample as drifted, and making the coupled system \emph{fire} a concept-discovery event. A white-box PGD attack on the per-sample drift score saturates detection trivially -- the flag rate on perturbed known-class flows rises from a clean $0.10$ to $1.0$ by $\epsilon = 0.5$ (\cref{fig:eval-rq3-pgd}). But transfer to grey-box is weak; crafted on a data-disjoint surrogate, the same perturbations move the victim's flag rate to only $\sim0.32$ at $\epsilon = 0.5$, rising to at most $0.60$ at $\epsilon = 2.0$. Furthermore, saturating per-sample detection does not necessarily force a fire. Injected in a stable pre-drift window these flows leave the concept-discovery accumulator below $T$ and trigger no events (for both white-box and grey-box), because firing depends on the displacement of the drifted-batch mean, not on individual flags.
-
-% \input{./evaluation/rq3_pgd_false_positive_table.tex}
 
 \begin{figure}[H]
     \centering

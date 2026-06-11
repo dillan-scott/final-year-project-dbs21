@@ -37,9 +37,7 @@ class NCMClassifier:
         # Euclidean Distance
         d_E = torch.cdist(h_j, prototypes, p=2.0)
 
-        # Riemannian divergence: geodesic (arc-length) distance on the unit hypersphere.
-        # d_R(h, p) = arccos(<h/‖h‖, p/‖p‖>)  — proper metric on S^{n-1}.
-        # Clamp before acos to guard against numerical values slightly outside [-1, 1].
+        # Riemannian divergence: geodesic (arc-length)
         h_j_norm = F.normalize(h_j, p=2, dim=1)
         proto_norm = F.normalize(prototypes, p=2, dim=1)
         cosine_sim = torch.matmul(h_j_norm, proto_norm.T).clamp(-1.0 + 1e-6, 1.0 - 1e-6)

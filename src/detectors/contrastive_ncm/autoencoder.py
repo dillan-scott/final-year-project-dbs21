@@ -6,9 +6,7 @@ from tqdm.auto import tqdm
 
 
 class DriftAutoencoder(nn.Module):
-    """
-    Complete Autoencoder as described in the paper.
-    """
+    """Complete Autoencoder as described in the paper."""
 
     def __init__(self, input_dim: int = 72, hidden_dim: int = 64, latent_dim: int = 32):
         super().__init__()
@@ -38,18 +36,7 @@ class DriftAutoencoder(nn.Module):
 
 
 class PrototypeContrastiveLoss(nn.Module):
-    """
-    Prototype-based contrastive loss (Eq. 2 of Kuppa & Le-Khac 2022).
-
-    For each sample h_i of class k, maximises cosine similarity to the batch
-    prototype v_k while minimising similarity to all other class prototypes v_j.
-    Batch prototypes are the per-class means of the current mini-batch embeddings.
-
-    num_classes must be passed explicitly so that classes absent from a batch
-    still occupy a slot in the softmax denominator (as zero prototypes), keeping
-    the denominator size constant across batches. Without this, batches that
-    happen to miss the highest-indexed class silently shrink the denominator.
-    """
+    """Prototype-based contrastive loss (Eq. 2 of Kuppa & Le-Khac 2022)."""
 
     def __init__(self, temperature: float = 0.1, num_classes: int | None = None):
         super().__init__()
@@ -88,7 +75,7 @@ def train_contrastive_autoencoder(
     disable_tqdm: bool = False,
     loss_log_every: int = 20,
 ) -> float:
-
+    """Train the autoencoder with contrastive loss."""
     device = next(model.parameters()).device
     optimizer = optim.Adam(model.parameters(), lr=lr)
     mse_loss_fn = nn.MSELoss()

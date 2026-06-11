@@ -45,7 +45,6 @@ class ContrastiveNCMDetector:
         self.temperature = temperature
         self.num_classes: int = 0
 
-        # State for recursive new-concept discovery (Section 4.2 / Eq. 6)
         self._drift_buffer: list[torch.Tensor] = []
         self._prev_drift_z: torch.Tensor | None = None
         self._delta_accumulated: torch.Tensor | None = None
@@ -83,13 +82,11 @@ class ContrastiveNCMDetector:
 
         if num_classes is None:
             num_classes = int(all_labels_tensor.max().item()) + 1
-            
+
         self.num_classes = num_classes
         self.ncm.fit(all_h_tensor, all_labels_tensor, num_classes)
 
-    def detect(
-        self, x: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def detect(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Classify incoming samples and flag drifted ones.
 
@@ -110,12 +107,14 @@ class ContrastiveNCMDetector:
         return predictions.cpu(), is_drifted.cpu(), min_distances.cpu()
 
     def update_with_batch_drifted(
-        self, z_batch: torch.Tensor, allow_fire: bool = True,
+        self,
+        z_batch: torch.Tensor,
+        allow_fire: bool = True,
     ) -> bool:
         """
         Batch-level concept-discovery matching the paper's time-window semantics
         (Eq. 6, Kuppa & Le-Khac 2022).
-        
+
         Args:
             z_batch: (M, latent_dim) tensor of all drifted embeddings in one batch.
             allow_fire: if False, the accumulator is still updated but the firing
@@ -130,11 +129,9 @@ class ContrastiveNCMDetector:
 
         z_batch = z_batch.detach()
 
-        # Store individual embeddings for accurate prototype computation
         for z in z_batch:
             self._drift_buffer.append(z)
 
-        # One representative per batch — the batch mean
         batch_mean = z_batch.mean(dim=0)
 
         if self._prev_drift_z is not None:
@@ -168,13 +165,7 @@ class ContrastiveNCMDetector:
         lr: float = 0.0001,
         from_scratch: bool = True,
     ) -> None:
-        """Retrain the autoencoder on updated data and refresh all NCM prototypes.
-
-        Following the paper ("the encoder network is re-trained with new training
-        data with the same loss function"), ``from_scratch=True`` re-initialises
-        the encoder weights before training rather than fine-tuning the current
-        ones, so each rebuild is a fresh fit on the accumulated data.
-        """
+        """Retrain the autoencoder on updated data and refresh all NCM prototypes."""
         if from_scratch:
             self._reset_autoencoder()
         self.fit(data_loader, epochs=epochs, lr=lr, num_classes=self.num_classes)

@@ -45,6 +45,8 @@ To meet the objectives described in the previous section, we address the followi
     \item Can an adversary control the firing trigger to either force false positives or suppress true positives, and what does a gating mechanism hardened against one failure mode cost in the other?
 \end{enumerate}
 
+None of these has an obvious answer. RQ1 cannot be settled by studying the detector alone: the surfaces a trigger-gated architecture exposes are precisely the ones a detector-only evaluation -- the kind the literature reports -- is structurally blind to, so answering it at all requires reconstructing and attacking the deployed, coupled system. RQ2 is genuinely open because a base learner rebuilt from scratch on a class-balanced retraining set may simply outvote a minority of poisoned flows; whether the composition channel can corrupt such a learner, and by what kind of payload, cannot be assumed in advance. And RQ3 admits no free answer: forcing and suppression pull the firing gate's design in opposite directions, so any floor added to resist one failure mode threatens to open the other. Characterising that trade-off, rather than simply hardening the gate, is where the difficulty lies.
+
 \section{Thesis Structure}
 The remainder of this thesis is organised as follows: 
 \begin{itemize}

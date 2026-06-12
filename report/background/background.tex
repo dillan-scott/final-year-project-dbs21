@@ -168,9 +168,9 @@ Concept-based attacks function at a higher level of abstraction than instance-ba
 
 By anticipating how the detector responds to changes in monitored statistics, the adversary can:
 \begin{itemize}
-    \item \textit{False adaptation}: Triggering adaptation where the system interprets the adversarial concept as a genuine distributional change~\cite{Korycki_2022}.
+    \item \textit{Force adaptation}: Triggering adaptation where the system interprets the adversarial concept as a genuine distributional change~\cite{Korycki_2022}.
     \item \textit{Exploit forgetting mechanisms}: Causing the system to discard historically valid or important data.
-    \item \textit{Suppressed adaptation}: Balancing genuine concept drift with a conflicting distribution, preventing the detector from reaching its change threshold or negatively impacting the adaptation process.
+    \item \textit{Suppress adaptation}: Balancing genuine concept drift with a conflicting distribution, preventing the detector from reaching its change threshold or negatively impacting the adaptation process.
 \end{itemize}
 
 % Such attacks are particularly effective against detectors designed to respond to gradual or incremental drift. By aligning the induced change with expected temporal patterns, the adversary can ensure that adaptation mechanisms are triggered naturally, causing the learner to internalise a corrupted concept as if it were benign~\cite{Koh_2021}.
